@@ -1,0 +1,43 @@
+
+const ARM_TYPE_OPTIONS = [
+  { value: 'so101_leader',        label: '单臂（示教臂）',       isDual: false },
+  { value: 'bi_so100_leader',     label: '双臂（示教臂）',       isDual: true  },
+  { value: 'bi_so100_leader_c',   label: '双臂+底盘（示教臂）', isDual: true  },
+  { value: 'so101_follower',      label: '单臂（操作臂）',       isDual: false },
+  { value: 'bi_so100_follower',   label: '双臂（操作臂）',       isDual: true  },
+  { value: 'bi_so100_follower_c', label: '双臂+底盘（操作臂）', isDual: true  },
+];
+
+const ARM_TYPE_MAP: Record<string, string> = {
+  so101_leader: 'so101_leader',
+  bi_so100_leader: 'bi_so100_leader',
+  bi_so100_leader_c: 'bi_so100_leader',
+  so101_follower: 'so101_follower',
+  bi_so100_follower: 'bi_so100_follower',
+  bi_so100_follower_c: 'bi_so100_follower',
+};
+
+enum CalibStep {
+  IDLE = 'idle',
+  CHECK_CONFIG = 'check_config',
+  SET_MIDDLE = 'set_middle',
+  RECORD_RANGE = 'record_range',
+  COMPLETED = 'completed',
+}
+
+const WIZARD_STEPS = [
+  { title: '配置信息' },
+  { title: '中间位置' },
+  { title: '运动范围' },
+  { title: '完成' },
+];
+
+const stepIndexMap: Record<CalibStep, number> = {
+  [CalibStep.IDLE]: 0,
+  [CalibStep.CHECK_CONFIG]: 0,
+  [CalibStep.SET_MIDDLE]: 1,
+  [CalibStep.RECORD_RANGE]: 2,
+  [CalibStep.COMPLETED]: 3,
+};
+
+type RecordRow = { motor: string; min: number; current: number; max: number };

@@ -1,0 +1,19 @@
+.calibrate-container {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.calibrate-container .ant-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.calibrate-container .ant-form-item-label > label {
+  font-weight: 500;
+}
+
+.calibrate-container .ant-btn-primary {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+}

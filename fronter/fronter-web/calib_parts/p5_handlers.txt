@@ -1,0 +1,153 @@
+${sid}`); addLog('📡 设备已连接');
+      setStepModalVisible(false); setCurrentStep(CalibStep.SET_MIDDLE); showSetMiddleModal();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e?.response?.data?.message || '启动新校准失败');
+      setCurrentStep(CalibStep.IDLE);
+    } finally { setLoading(false); }
+  };
+
+  const showSetMiddleModal = () => {
+    setStepModalTitle('步骤 1/2：设置中间位置');
+    setStepModalContent(
+      <div>
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#1677ff' }}>请手动将机械臂移至行程中间位置</p>
+        <ul style={{ paddingLeft: 20, marginTop: 12, lineHeight: 2.2 }}>
+          <li>将所有关节移动到可活动角度的<strong>中间位置</strong></li>
+          <li>确保每个关节都不偏向任何一侧</li>
+          <li>目视检查各关节位置是否合理</li>
+        </ul>
+        <div style={S.warnBox}>⚠️ 此步骤非常重要，中间位置不准确会影响校准结果</div>
+        <p style={{ marginTop: 12, color: '#888' }}>完成后点击「确定」继续</p>
+      </div>
+    );
+    setStepModalVisible(true);
+  };
+
+  const handleSetMiddle = async () => {
+    try {
+      setLoading(true); addLog('⏳ 正在设置中间位置...');
+      const res = await calibrateApi.setMiddle(sessionId);
+      if (res.data.code === 0) {
+        addLog('✅ 中间位置已设置');
+        setStepModalVisible(false); setCurrentStep(CalibStep.RECORD_RANGE); showRecordRangeModal();
+      } else throw new Error(res.data.message);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e?.response?.data?.message || '设置中间位置失败');
+      addLog('❌ 设置中间位置失败'); await handleCancelCalibration();
+    } finally { setLoading(false); }
+  };
+
+  const showRecordRangeModal = () => {
+    setStepModalTitle('步骤 2/2：记录运动范围');
+    setStepModalContent(
+      <div>
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#1677ff' }}>准备记录关节运动范围</p>
+        <ul style={{ paddingLeft: 20, marginTop: 12, lineHeight: 2.2 }}>
+          <li>点击「开始记录」后，依次将<strong>每个关节</strong>移至物理行程<strong>最大角度</strong></li>
+          <li>再依次将<strong>每个关节</strong>移至物理行程<strong>最小角度</strong></li>
+          <li>确保所有关节都完整移动过</li>
+        </ul>
+        <div style={S.warnBox}>⚠️ 必须移动所有关节到极限位置，否则校准会报错</div>
+      </div>
+    );
+    setStepModalVisible(true);
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      setLoading(true); addLog('📊 开始记录运动范围...');
+      const res = await calibrateApi.startRecording(sessionId);
+      if (res.data.code === 0) {
+        addLog('✅ 正在记录，请移动机械臂...');
+        setRecordingData([]);
+        const iv = setInterval(async () => {
+          try {
+            const sr = await calibrateApi.getRecordingStatus(sessionId);
+            if (sr.data.code === 0 && sr.data.data?.positions) setRecordingData(sr.data.data.positions);
+          } catch { /* ignore */ }
+        }, 150);
+        setRecordingInterval(iv);
+      } else throw new Error(res.data.message);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e?.response?.data?.message || '开始记录失败');
+      addLog('❌ 开始记录失败'); await handleCancelCalibration();
+    } finally { setLoading(false); }
+  };
+
+  const handleStopRecording = async () => {
+    if (recordingInterval) { clearInterval(recordingInterval); setRecordingInterval(null); }
+    try {
+      setLoading(true); addLog('⏸️ 停止记录...');
+      const res = await calibrateApi.stopRecording(sessionId);
+      if (res.data.code === 0) {
+        addLog('✅ 记录完成'); setStepModalVisible(false); await handleSaveCalibration();
+      } else throw new Error(res.data.message);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e?.response?.data?.message || '停止记录失败');
+      addLog('❌ 停止记录失败');
+      setStepModalVisible(false); setCurrentStep(CalibStep.IDLE); setSessionId('');
+    } finally { setLoading(false); }
+  };
+
+  const handleSaveCalibration = async () => {
+    try {
+      setLoading(true); addLog('💾 正在保存校准配置...');
+      const res = await calibrateApi.save(sessionId);
+      if (res.data.code === 0 && res.data.data) {
+        addLog(`✅ ${res.data.data.message}`);
+        addLog(`📁 ${res.data.data.config_path}`);
+        setCurrentStep(CalibStep.COMPLETED); showCompletedModal();
+      } else throw new Error(res.data.message);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e?.response?.data?.message || '保存失败');
+      setCurrentStep(CalibStep.IDLE); setSessionId('');
+    } finally { setLoading(false); }
+  };
+
+  const showCompletedModal = () => {
+    Modal.success({
+      title: '校准完成',
+      content: (
+        <div>
+          <p style={{ color: '#52c41a', fontSize: 15 }}>✅ 机械臂校准已成功完成！</p>
+          <p>校准配置已保存，您现在可以进行遥操或数据采集。</p>
+        </div>
+      ),
+      onOk: () => { setCurrentStep(CalibStep.IDLE); setSessionId(''); setRecordingData([]); },
+    });
+  };
+
+  const handleCancelCalibration = async () => {
+    if (recordingInterval) { clearInterval(recordingInterval); setRecordingInterval(null); }
+    if (sessionId) {
+      try { await calibrateApi.cancel(sessionId); addLog('🛑 校准已取消'); } catch { /* ignore */ }
+    }
+    setStepModalVisible(false); setCurrentStep(CalibStep.IDLE); setSessionId(''); setRecordingData([]);
+  };
+
+  const handleModalOk = () => {
+    switch (currentStep) {
+      case CalibStep.CHECK_CONFIG:
+        setStepModalVisible(false); void startNewCalibration(buildParams()); break;
+      case CalibStep.SET_MIDDLE:
+        void handleSetMiddle(); break;
+      case CalibStep.RECORD_RANGE:
+        recordingInterval ? void handleStopRecording() : void handleStartRecording(); break;
+      default:
+        setStepModalVisible(false);
+    }
+  };
+
+  const handleModalCancel = () => {
+    currentStep === CalibStep.CHECK_CONFIG
+      ? void handleUseExistingConfig()
+      : void handleCancelCalibration();
+  };
+
+  const isIdle = currentStep === CalibStep.IDLE;
+  const curStepIdx = stepIndexMap[currentStep];

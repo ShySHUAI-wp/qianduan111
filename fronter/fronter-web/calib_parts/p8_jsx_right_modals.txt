@@ -1,0 +1,108 @@
+
+        {/* ── 右侧：日志区 ── */}
+        <div style={S.logPanel}>
+          <div style={S.logHeader}>
+            <span style={S.logTitle}>操作日志</span>
+            <Button
+              size="small"
+              onClick={() => setLogs([])}
+              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(160,200,230,0.7)', fontSize:11 }}
+            >
+              清空
+            </Button>
+          </div>
+          <div style={S.logBody}>
+            {logs.length === 0 ? (
+              <div style={S.logEmpty}>暂无日志</div>
+            ) : (
+              logs.map((line, i) => (
+                <div key={i} style={{
+                  ...S.logLine,
+                  color: line.includes('❌') ? '#ff7070'
+                       : line.includes('✅') ? '#81c784'
+                       : line.includes('🚀') ? '#00d4ff'
+                       : 'rgba(180,210,240,0.75)',
+                }}>
+                  {line}
+                </div>
+              ))
+            )}
+            <div ref={logsEndRef} />
+          </div>
+        </div>
+
+      </div> {/* end body */}
+
+      {/* ── 端口配置弹窗 ── */}
+      <Modal
+        title={isDualArm ? '配置机械臂端口（双臂·需 2 个）' : '配置机械臂端口（单臂·需 1 个）'}
+        open={portModalVisible}
+        onCancel={() => setPortModalVisible(false)}
+        width={900}
+        footer={[<Button key="close" onClick={() => setPortModalVisible(false)}>关闭</Button>]}
+      >
+        <PortFinder
+          onPortsChange={(ports) => {
+            setSelectedPorts(ports);
+            addLog(`🔌 已选择端口: ${ports.join(', ')}`);
+          }}
+          onLog={addLog}
+          maxSelection={isDualArm ? 2 : 1}
+          selectionType={isDualArm ? 'checkbox' : 'radio'}
+        />
+      </Modal>
+
+      {/* ── 步骤引导弹窗 ── */}
+      <Modal
+        title={stepModalTitle}
+        open={stepModalVisible}
+        onOk={handleModalOk}
+        onCancel={handleModalCancel}
+        okText={
+          currentStep === CalibStep.CHECK_CONFIG ? '重新校准'
+          : currentStep === CalibStep.RECORD_RANGE && recordingInterval ? '完成记录'
+          : currentStep === CalibStep.RECORD_RANGE ? '开始记录'
+          : '确定'
+        }
+        cancelText={currentStep === CalibStep.CHECK_CONFIG ? '使用现有配置' : '取消'}
+        confirmLoading={loading}
+        width={600}
+        maskClosable={false}
+        keyboard={false}
+      >
+        {currentStep === CalibStep.RECORD_RANGE && recordingInterval ? (
+          <div>
+            <p style={{ color: '#1677ff', marginBottom: 12 }}>🔄 正在实时记录各关节位置，请移动机械臂到最大和最小角度</p>
+            {recordingData.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 20, color: '#999' }}>正在获取关节数据...</div>
+            ) : (
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <thead><tr>
+                  {['关节','最小值','当前值','最大值'].map(h=>(
+                    <th key={h} style={{ background:'#fafafa', padding:'6px 12px', textAlign:'left', borderBottom:'1px solid #f0f0f0' }}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {recordingData.map((row) => (
+                    <tr key={row.motor}>
+                      <td style={{ padding:'6px 12px', borderBottom:'1px solid #f5f5f5' }}>{row.motor}</td>
+                      <td style={{ padding:'6px 12px', color:'#1890ff', borderBottom:'1px solid #f5f5f5' }}>{row.min}</td>
+                      <td style={{ padding:'6px 12px', color:'#52c41a', borderBottom:'1px solid #f5f5f5' }}>{row.current}</td>
+                      <td style={{ padding:'6px 12px', color:'#ff4d4f', borderBottom:'1px solid #f5f5f5' }}>{row.max}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <div style={{ padding:'8px 12px', background:'#f0f5ff', borderRadius:4, marginTop:12, fontSize:12, color:'#1677ff' }}>
+              💡 确保每个关节的 MIN 和 MAX 都有明显变化
+            </div>
+          </div>
+        ) : stepModalContent}
+      </Modal>
+
+    </div>
+  );
+}
+
+export default Calibration;

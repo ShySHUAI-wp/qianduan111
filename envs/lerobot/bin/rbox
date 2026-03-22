@@ -1,0 +1,3 @@
+#!/home/shuo/miniconda3/envs/lerobot/bin/python3.10
+from cmeel.run import cmeel_run
+cmeel_run()

@@ -1,0 +1,58 @@
+/* CameraPreview 组件样式 */
+
+.camera-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 400px;
+}
+
+.camera-preview-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.camera-preview-loading p {
+  margin-top: 16px;
+  color: #666;
+}
+
+.camera-preview-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #ff4d4f;
+  font-size: 16px;
+}
+
+.camera-preview-image {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background-color: #000;
+}
+
+.camera-preview-info {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.camera-preview-info p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.camera-preview-info p:last-child {
+  margin-top: 8px;
+  font-style: italic;
+}

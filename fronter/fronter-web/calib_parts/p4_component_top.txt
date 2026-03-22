@@ -1,0 +1,111 @@
+
+function Calibration() {
+  const [form] = Form.useForm();
+  const [isDualArm, setIsDualArm]               = useState(false);
+  const [loading, setLoading]                   = useState(false);
+  const [selectedPorts, setSelectedPorts]       = useState<string[]>([]);
+  const [portModalVisible, setPortModalVisible] = useState(false);
+  const [sessionId, setSessionId]               = useState('');
+  const [currentStep, setCurrentStep]           = useState<CalibStep>(CalibStep.IDLE);
+  const [stepModalVisible, setStepModalVisible] = useState(false);
+  const [stepModalTitle, setStepModalTitle]     = useState('');
+  const [stepModalContent, setStepModalContent] = useState<React.ReactNode>(null);
+  const [recordingData, setRecordingData]       = useState<RecordRow[]>([]);
+  const [recordingInterval, setRecordingInterval] =
+    useState<ReturnType<typeof setInterval> | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  const addLog = (msg: string) => {
+    const t = new Date().toLocaleTimeString();
+    setLogs((prev) => [...prev, `[${t}] ${msg}`]);
+  };
+
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs]);
+
+  const handleArmTypeChange = (value: string) => {
+    const found = ARM_TYPE_OPTIONS.find((t) => t.value === value);
+    setIsDualArm(found?.isDual || false);
+    setSelectedPorts([]);
+    form.setFieldValue('arm_type', value);
+  };
+
+  const buildParams = () => {
+    const v = form.getFieldsValue();
+    const realType = ARM_TYPE_MAP[v.arm_type] || v.arm_type;
+    const p: Record<string, string> = { arm_type: realType, arm_id: v.arm_id };
+    if (isDualArm) {
+      p.left_arm_port  = selectedPorts[0] || '';
+      p.right_arm_port = selectedPorts[1] || '';
+    } else {
+      p.port = selectedPorts[0] || '';
+    }
+    return p;
+  };
+
+  const handleStartCalibration = async () => {
+    try {
+      await form.validateFields();
+      const v = form.getFieldsValue();
+      if (!v.arm_type || !v.arm_id)              { message.error('请填写完整信息'); return; }
+      if (isDualArm && selectedPorts.length < 2) { message.error('双臂需要配置 2 个端口'); return; }
+      if (!isDualArm && selectedPorts.length < 1){ message.error('单臂需要配置 1 个端口'); return; }
+      setLoading(true);
+      addLog(`🚀 开始校准: ${v.arm_type} — ${v.arm_id}`);
+      const params = buildParams();
+      const res = await calibrateApi.checkConfig(params);
+      if (res.data.code === 0 && res.data.data) {
+        const { exists, path } = res.data.data;
+        if (exists) { setCurrentStep(CalibStep.CHECK_CONFIG); showConfigExistsModal(path); }
+        else        { await startNewCalibration(params); }
+      }
+    } catch (err: unknown) {
+      const e = err as { errorFields?: unknown; response?: { data?: { message?: string } } };
+      if (e?.errorFields) return;
+      message.error(e?.response?.data?.message || '启动校准失败');
+    } finally { setLoading(false); }
+  };
+
+  const showConfigExistsModal = (configPath: string) => {
+    setStepModalTitle('检测到已有配置文件');
+    setStepModalContent(
+      <div>
+        <p>检测到以下路径存在校准配置：</p>
+        <pre style={{ background: '#f5f5f5', padding: 10, borderRadius: 4, fontSize: 12, overflow: 'auto' }}>
+          {configPath}
+        </pre>
+        <p style={{ color: '#666', marginTop: 8 }}>选择「重新校准」将覆盖；选择「使用现有配置」将直接应用。</p>
+      </div>
+    );
+    setStepModalVisible(true);
+  };
+
+  const handleUseExistingConfig = async () => {
+    try {
+      setLoading(true);
+      const startRes = await calibrateApi.start(buildParams());
+      if (startRes.data.code !== 0 || !startRes.data.data) throw new Error(startRes.data.message);
+      const sid = startRes.data.data.session_id;
+      setSessionId(sid); addLog(`📝 会话: ${sid}`);
+      const useRes = await calibrateApi.useExisting(sid);
+      if (useRes.data.code === 0 && useRes.data.data) {
+        addLog(`✅ ${useRes.data.data.message}`);
+        message.success('成功应用现有校准配置');
+        setStepModalVisible(false); setCurrentStep(CalibStep.COMPLETED); showCompletedModal();
+      } else throw new Error(useRes.data.message);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      message.error(e?.response?.data?.message || '使用现有配置失败');
+      await handleCancelCalibration();
+    } finally { setLoading(false); }
+  };
+
+  const startNewCalibration = async (params: Record<string, string>) => {
+    try {
+      setLoading(true);
+      const startRes = await calibrateApi.start(params);
+      if (startRes.data.code !== 0 || !startRes.data.data) throw new Error(startRes.data.message);
+      const sid = startRes.data.data.session_id;
+      setSessionId(sid); addLog(`📝 会话: 

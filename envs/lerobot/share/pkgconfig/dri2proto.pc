@@ -1,0 +1,7 @@
+prefix=/home/shuo/miniconda3/envs/lerobot
+includedir=${prefix}/include
+ 
+Name: DRI2Proto
+Description: DRI2 extension headers
+Version: 2.8
+Cflags: -I${includedir}

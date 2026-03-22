@@ -1,0 +1,31 @@
+/* PortFinder 组件样式 */
+
+.port-finder-space {
+  width: 100%;
+}
+
+.port-finder-selector-wrapper {
+  /* 端口选择器容器 */
+}
+
+.port-finder-selector-label {
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+.port-finder-select {
+  width: 300px;
+}
+
+.port-finder-modal-content {
+  line-height: 1.8;
+}
+
+.port-finder-modal-content p {
+  margin-bottom: 8px;
+}
+
+.port-finder-modal-content strong {
+  color: #1890ff;
+  font-weight: 600;
+}
