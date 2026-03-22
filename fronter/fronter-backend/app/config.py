@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from typing import List
 
@@ -9,6 +10,9 @@ class Settings(BaseSettings):
     # LeRobot 配置
     LEROBOT_PATH: str = "/home/shuo/cola/lerobot"
     TUTORIAL_PATH: str = "/home/shuo/cola/lerobot_cobot/fronter/turtorial"
+
+    # 校准文件保存路径 (相对于项目根目录)
+    CALIBRATION_PATH: str = "calibration"
 
     # 服务配置
     MAX_CONCURRENT_COMMANDS: int = 5
@@ -27,3 +31,8 @@ class Settings(BaseSettings):
 
 # 全局配置实例
 settings = Settings()
+
+
+def get_project_root() -> Path:
+    """获取项目根目录 (fronter-backend的父目录)"""
+    return Path(__file__).resolve().parent.parent

@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.models.response import ApiResponse
+from app.config import settings, get_project_root
 from lerobot.robots import make_robot_from_config
 from lerobot.teleoperators import make_teleoperator_from_config
 from lerobot.robots.so101_follower.config_so101_follower import SO101FollowerConfig
@@ -37,15 +38,17 @@ class CalibrateStepRequest(BaseModel):
 
 
 def get_config_path(arm_type: str, arm_id: str) -> Path:
-    """获取校准配置文件路径"""
-    home = os.path.expanduser("~")
+    """获取校准配置文件路径 (保存在项目根目录下的calibration文件夹)"""
+    project_root = get_project_root()
+    calibration_dir = project_root / settings.CALIBRATION_PATH
 
+    # 根据类型创建子目录
     if 'leader' in arm_type:
-        base_path = Path(home) / ".cache" / "huggingface" / "lerobot" / "calibration" / "teleoperators"
+        base_path = calibration_dir / "teleoperators" / arm_type
     else:
-        base_path = Path(home) / ".cache" / "huggingface" / "lerobot" / "calibration" / "robots"
+        base_path = calibration_dir / "robots" / arm_type
 
-    return base_path / arm_type / f"{arm_id}.json"
+    return base_path / f"{arm_id}.json"
 
 
 @router.post("/check-config")
@@ -434,8 +437,14 @@ async def save_calibration(request: CalibrateStepRequest):
         # 写入校准到设备
         device.bus.write_calibration(calibration)
 
-        # 保存校准文件
+        # 保存校准文件到自定义路径
         device.calibration = calibration
+
+        # 使用自定义校准路径
+        custom_config_path = get_config_path(session["arm_type"], session["arm_id"])
+        custom_config_path.parent.mkdir(parents=True, exist_ok=True)
+        device.calibration_fpath = custom_config_path
+
         device._save_calibration()
 
         config_path = str(device.calibration_fpath)
