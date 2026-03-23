@@ -144,7 +144,8 @@ const S: Record<string, React.CSSProperties> = {
   },
   logHeader: {
     display: 'flex',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: '8px',
     padding: '12px 16px',
     borderBottom: '1px solid #f0f0f0',
@@ -717,16 +718,7 @@ function CalibrationPage() {
           >
             {calibrationStatus}
           </Tag>
-          <Tag
-            style={{
-              padding: '4px 12px',
-              borderRadius: 20,
-              fontSize: 13,
-              background: connectionStatus === '成功' ? '#f6ffed' : '#fff2f0',
-              color: connectionStatus === '成功' ? '#52c41a' : '#ff4d4f',
-              border: `1px solid ${connectionStatus === '成功' ? '#b7eb8f' : '#ffccc7'}`,
-            }}
-          >
+          <Tag color={connectionStatus === '成功' ? 'green' : 'red'}>
             连接状态：{connectionStatus}
           </Tag>
         </div>
@@ -824,12 +816,15 @@ function CalibrationPage() {
         {/* 右侧日志面板 */}
         <div style={S.logPanel}>
           <div style={S.logHeader}>
-            <Button size="small" icon={<CopyOutlined />} onClick={() => navigator.clipboard.writeText(logs.join('\n'))}>
-              复制
-            </Button>
-            <Button size="small" icon={<ClearOutlined />} onClick={() => setLogs([])}>
-              清空
-            </Button>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#333' }}>日志输出</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button size="small" icon={<CopyOutlined />} onClick={() => navigator.clipboard.writeText(logs.join('\n'))}>
+                复制
+              </Button>
+              <Button size="small" icon={<ClearOutlined />} onClick={() => setLogs([])}>
+                清空
+              </Button>
+            </div>
           </div>
           <div style={S.logBody}>
             {logs.length === 0 ? (

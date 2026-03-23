@@ -5,6 +5,7 @@ import Tutorial from './pages/Tutorial';
 import ChassisControl from './pages/ChassisControl';
 import RobotControl from './pages/RobotControl';
 import CalibrationPage from './pages/CalibrationPage';
+import MotionTeachingPage from './pages/MotionTeachingPage';
 
 function AppRouter() {
   return (
@@ -13,6 +14,7 @@ function AppRouter() {
         <Route index element={<Navigate to="/home" replace />} />
         <Route path="home" element={<Home />} />
         <Route path="calibration" element={<CalibrationPage />} />
+        <Route path="motion-teaching" element={<MotionTeachingPage />} />
         <Route path="tutorial/*" element={<Tutorial />} />
         <Route path="chassis-control" element={<ChassisControl />} />
         <Route path="robot-control/*" element={<RobotControl />} />

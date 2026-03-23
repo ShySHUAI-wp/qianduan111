@@ -115,25 +115,6 @@ function Home() {
         </Title>
         <Space size="middle">
           {statusTag}
-          <Button
-            type="primary"
-            icon={<LinkOutlined />}
-            onClick={() => {
-              setActionDrawer('connect');
-              void handleConnect();
-            }}
-            disabled={conn !== 'disconnected'}
-          >
-            连接设备
-          </Button>
-          <Button
-            danger
-            icon={<DisconnectOutlined />}
-            onClick={handleDisconnect}
-            disabled={conn === 'disconnected'}
-          >
-            断开设备
-          </Button>
         </Space>
       </div>
 
@@ -190,13 +171,34 @@ function Home() {
 
               <Space wrap>
                 <Button
+                  type="primary"
+                  icon={<LinkOutlined />}
+                  onClick={() => {
+                    setActionDrawer('connect');
+                    void handleConnect();
+                  }}
+                  disabled={conn !== 'disconnected'}
+                >
+                  连接设备
+                </Button>
+                <Button
+                  danger
+                  icon={<DisconnectOutlined />}
+                  onClick={handleDisconnect}
+                  disabled={conn === 'disconnected'}
+                >
+                  断开设备
+                </Button>
+              </Space>
+
+              <div style={{ height: 10 }} />
+
+              <Space wrap>
+                <Button
                   icon={<SearchOutlined />}
                   onClick={() => setActionDrawer('search')}
                 >
                   查找设备
-                </Button>
-                <Button type="primary" danger icon={<DisconnectOutlined />} onClick={handleDisconnect} disabled={conn === 'disconnected'}>
-                  断开设备
                 </Button>
               </Space>
             </Card>

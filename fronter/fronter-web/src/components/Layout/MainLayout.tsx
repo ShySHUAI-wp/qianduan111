@@ -21,7 +21,7 @@ const menuItems: MenuItem[] = [
     label: '设备标定',
   },
   {
-    key: '/robot-control?tab=teleoperation',
+    key: '/motion-teaching',
     icon: <PlayCircleOutlined />,
     label: '动作示教',
   },
@@ -56,6 +56,7 @@ function MainLayout() {
     const path = location.pathname;
     if (path.startsWith('/home')) return '/home';
     if (path.startsWith('/calibration')) return '/calibration';
+    if (path.startsWith('/motion-teaching')) return '/motion-teaching';
     if (path.startsWith('/robot-control')) {
       const p = new URLSearchParams(location.search);
       const tab = p.get('tab') || 'teleoperation';
