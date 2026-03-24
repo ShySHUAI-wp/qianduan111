@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons';
 import { calibrateApi, systemApi, portApi } from '@/services/api';
 import LogViewer from '@/components/LogViewer';
+import PortFinder from '@/components/PortFinder';
 import type { PortInfo } from '@/types';
 
 // 机械臂类型选项 - 前端通用类型
@@ -53,14 +54,6 @@ const stepIndexMap: Record<CalibStep, number> = {
 type RecordRow = { motor: string; min: number; current: number; max: number };
 type ConnectionStatus = '未连接' | '成功';
 type CalibrationStatus = '待开始' | '校准中' | '校准完成';
-
-// 查找端口步骤枚举
-enum FindPortStep {
-  IDLE = 'idle',
-  INSERT = 'insert',      // 步骤1：插入USB
-  REMOVE = 'remove',      // 步骤2：拔掉USB
-  REINSERT = 'reinsert',  // 步骤3：重新插入USB
-}
 
 const S: Record<string, React.CSSProperties> = {
   root: {
@@ -169,11 +162,9 @@ function CalibrationPage() {
   const [loading, setLoading] = useState(false);
   const [selectedPort, setSelectedPort] = useState<string>('');
 
-  // 查找端口相关状态
-  const [findPortStep, setFindPortStep] = useState<FindPortStep>(FindPortStep.IDLE);
-  const [findPortModalVisible, setFindPortModalVisible] = useState(false);
-  const [portsBefore, setPortsBefore] = useState<string[]>([]);
-  const [targetPorts, setTargetPorts] = useState<string[]>([]);
+  // 端口配置相关状态
+  const [portModalVisible, setPortModalVisible] = useState(false);
+  const [selectedPorts, setSelectedPorts] = useState<string[]>([]);
 
   const [sessionId, setSessionId] = useState('');
   const [currentStep, setCurrentStep] = useState<CalibStep>(CalibStep.IDLE);
@@ -208,102 +199,24 @@ function CalibrationPage() {
     const found = ARM_TYPES.find((t) => t.value === value);
     setIsDualArm(found?.isDual || false);
     setSelectedPort('');
+    setSelectedPorts([]);
     form.setFieldValue('arm_type', value);
     form.setFieldValue('port', '');
   };
 
-  // 获取当前端口列表
-  const getCurrentPorts = async (): Promise<string[]> => {
-    try {
-      const response = await portApi.list();
-      if (response.data.code === 0 && response.data.data) {
-        const allPorts: PortInfo[] = response.data.data.ports;
-        return allPorts.map((p) => p.path);
-      }
-      return [];
-    } catch {
-      return [];
+  // 端口变化
+  const handlePortsChange = (ports: string[]) => {
+    setSelectedPorts(ports);
+    if (ports.length > 0) {
+      setSelectedPort(ports[0]);
+      addLog(`🔌 已选择端口: ${ports.join(', ')}`);
     }
   };
 
-  // 打开查找端口弹窗（开始步骤1）
-  const handleOpenFindPortModal = () => {
-    setFindPortStep(FindPortStep.INSERT);
-    setFindPortModalVisible(true);
-    setTargetPorts([]);
-    setPortsBefore([]);
-    addLog(' 开始端口查找流程');
-  };
-
-  // 步骤1：用户插入USB后点击确定
-  const handleInsertConfirm = async () => {
-    addLog(' 步骤1/3：等待插入USB串口...');
-    const currentPorts = await getCurrentPorts();
-    setPortsBefore(currentPorts);
-    addLog(` 当前端口列表: ${currentPorts.join(', ') || '(无)'}`);
-    setFindPortStep(FindPortStep.REMOVE);
-  };
-
-  // 步骤2：用户拔掉USB后点击确定
-  const handleRemoveConfirm = async () => {
-    addLog(' 步骤2/3：检测端口变化...');
-    const currentPorts = await getCurrentPorts();
-
-    // 找出被拔掉的端口（之前有现在没有的）
-    const removedPorts = portsBefore.filter((p) => !currentPorts.includes(p));
-
-    if (removedPorts.length === 0) {
-      message.error('未检测到端口变化，请确认已拔掉USB串口');
-      addLog(' ❌ 未检测到端口变化');
-      return;
-    }
-
-    setTargetPorts(removedPorts);
-    addLog(` 检测到目标端口: ${removedPorts.join(', ')}`);
-    setFindPortStep(FindPortStep.REINSERT);
-  };
-
-  // 步骤3：用户重新插入USB后点击确定
-  const handleReinsertConfirm = async () => {
-    addLog(' 步骤3/3：验证端口重新插入...');
-    const currentPorts = await getCurrentPorts();
-
-    const foundPorts: string[] = [];
-    for (const port of targetPorts) {
-      if (currentPorts.includes(port)) {
-        foundPorts.push(port);
-        addLog(` ✅ 端口重新插入成功: ${port}`);
-      } else {
-        addLog(` ❌ 端口未找到: ${port}`);
-      }
-    }
-
-    if (foundPorts.length > 0) {
-      // 选择第一个找到的端口
-      const selected = foundPorts[0];
-      setSelectedPort(selected);
-      form.setFieldValue('port', selected);
-      setConnectionStatus('成功');
-      addLog(` ✅ 已选择端口: ${selected}`);
-      message.success(`端口配置成功: ${selected}`);
-    } else {
-      message.error('未能找到目标端口，请重试');
-    }
-
-    // 关闭弹窗并重置状态
-    setFindPortModalVisible(false);
-    setFindPortStep(FindPortStep.IDLE);
-    setTargetPorts([]);
-    setPortsBefore([]);
-  };
-
-  // 取消查找端口流程
-  const handleCancelFindPort = () => {
-    setFindPortModalVisible(false);
-    setFindPortStep(FindPortStep.IDLE);
-    setTargetPorts([]);
-    setPortsBefore([]);
-    addLog(' 已取消端口查找');
+  // 打开端口配置弹窗
+  const handleOpenPortModal = () => {
+    setPortModalVisible(true);
+    addLog(' 打开端口配置');
   };
 
   const isFormComplete = useMemo(() => {
@@ -763,7 +676,7 @@ function CalibrationPage() {
                 <Button
                   type="primary"
                   icon={<UsbOutlined />}
-                  onClick={handleOpenFindPortModal}
+                  onClick={handleOpenPortModal}
                   disabled={currentStep !== CalibStep.IDLE}
                   size="large"
                   style={S.buttonSecondary}
@@ -840,53 +753,20 @@ function CalibrationPage() {
         </div>
       </div>
 
-      {/* 端口配置弹窗 - 三步流程 */}
+      {/* 端口配置弹窗 */}
       <Modal
-        title={`查找端口 - 步骤 ${findPortStep === FindPortStep.INSERT ? '1' : findPortStep === FindPortStep.REMOVE ? '2' : '3'}/3`}
-        open={findPortModalVisible}
-        onOk={() => {
-          if (findPortStep === FindPortStep.INSERT) void handleInsertConfirm();
-          else if (findPortStep === FindPortStep.REMOVE) void handleRemoveConfirm();
-          else void handleReinsertConfirm();
-        }}
-        onCancel={handleCancelFindPort}
-        okText="确定"
-        cancelText="取消"
-        width={500}
-        maskClosable={false}
-        closable={false}
+        title={isDualArm ? '配置机械臂端口（双臂）' : '配置机械臂端口（单臂）'}
+        open={portModalVisible}
+        onCancel={() => setPortModalVisible(false)}
+        footer={null}
+        width={900}
       >
-        {findPortStep === FindPortStep.INSERT && (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <UsbOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
-            <p style={{ fontSize: 16, color: '#333', marginBottom: 8 }}>请插入要查找的USB串口</p>
-            <p style={{ fontSize: 13, color: '#999' }}>将USB串口插入计算机，然后点击确定继续</p>
-          </div>
-        )}
-
-        {findPortStep === FindPortStep.REMOVE && (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <UsbOutlined style={{ fontSize: 48, color: '#ff4d4f', marginBottom: 16 }} />
-            <p style={{ fontSize: 16, color: '#333', marginBottom: 8 }}>请拔掉刚才插入的USB串口</p>
-            <p style={{ fontSize: 13, color: '#999' }}>将USB串口从计算机拔掉，然后点击确定继续</p>
-            {targetPorts.length > 0 && (
-              <p style={{ fontSize: 13, color: '#1890ff', marginTop: 12 }}>
-                检测到目标端口: {targetPorts.join(', ')}
-              </p>
-            )}
-          </div>
-        )}
-
-        {findPortStep === FindPortStep.REINSERT && (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <UsbOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
-            <p style={{ fontSize: 16, color: '#333', marginBottom: 8 }}>请重新插入USB串口</p>
-            <p style={{ fontSize: 13, color: '#999' }}>将USB串口重新插入计算机，然后点击确定完成查找</p>
-            <p style={{ fontSize: 13, color: '#1890ff', marginTop: 12 }}>
-              目标端口: {targetPorts.join(', ')}
-            </p>
-          </div>
-        )}
+        <PortFinder
+          onPortsChange={handlePortsChange}
+          onLog={addLog}
+          maxSelection={isDualArm ? 2 : 1}
+          selectionType="checkbox"
+        />
       </Modal>
 
       {/* 校准流程弹窗 */}
