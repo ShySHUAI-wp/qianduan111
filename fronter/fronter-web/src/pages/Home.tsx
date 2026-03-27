@@ -14,8 +14,7 @@ import {
   message,
 } from 'antd';
 import { LinkOutlined, DisconnectOutlined, ToolOutlined, ThunderboltOutlined, SearchOutlined } from '@ant-design/icons';
-import { systemApi } from '@/services/api';
-import { portApi } from '@/services/api';
+import { wsService } from '@/services/socket';
 import PortFinder from '@/components/PortFinder';
 import DigitalTwin from '@/components/DigitalTwin';
 import type { PortInfo } from '@/types';
@@ -46,8 +45,8 @@ function Home() {
   const refreshInfo = async () => {
     setLoadingInfo(true);
     try {
-      const resp = await systemApi.getInfo();
-      if (resp.data.code === 0) setInfo(resp.data.data);
+      const resp = await wsService.systemInfo();
+      if (resp.code === 0) setInfo(resp.data);
     } finally {
       setLoadingInfo(false);
     }
@@ -59,9 +58,9 @@ function Home() {
 
   const handleConnect = async () => {
     setConn('connecting');
-    // 这里优先用 health/info 做“前端接入”的轻量握手；后续可对接 rosbridge websocket
+    // 这里优先用 health/info 做”前端接入”的轻量握手；后续可对接 rosbridge websocket
     try {
-      await systemApi.health();
+      await wsService.systemHealth();
       await refreshInfo();
       setConn('connected');
       message.success('设备连接成功');
@@ -87,9 +86,9 @@ function Home() {
     setPinPort('');
     setPinAlias('');
     try {
-      const resp = await portApi.list();
-      if (resp.data.code === 0 && resp.data.data) {
-        setPinPorts(resp.data.data.ports || []);
+      const resp = await wsService.portsList();
+      if (resp.code === 0 && resp.data) {
+        setPinPorts(resp.data.ports || []);
       }
     } catch {
       // ignore

@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Button, Form, Input, Modal, Select, Steps, Tag, message } from 'antd';
+import { Button, Form, Input, Modal, Select, Steps, Tag, message, InputNumber } from 'antd';
 import {
   CheckCircleOutlined, PlayCircleOutlined, StopOutlined, UsbOutlined,
   CopyOutlined, ClearOutlined, RobotOutlined,
 } from '@ant-design/icons';
-import { calibrateApi, systemApi, portApi } from '@/services/api';
+import { wsService } from '@/services/socket';
 import LogViewer from '@/components/LogViewer';
 import PortFinder from '@/components/PortFinder';
 import type { PortInfo } from '@/types';
@@ -175,6 +175,10 @@ function CalibrationPage() {
   const [recordingInterval, setRecordingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
 
+  // 手动关节值编辑相关状态
+  const [editingMotor, setEditingMotor] = useState<string | null>(null);
+  const [manualOverrides, setManualOverrides] = useState<Record<string, number>>({});
+
   const addLog = (msg: string) => {
     const t = new Date().toLocaleTimeString();
     setLogs((prev) => [...prev, `[${t}] ${msg}`]);
@@ -184,7 +188,7 @@ function CalibrationPage() {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        await systemApi.health();
+        await wsService.systemHealth();
         setConnectionStatus('成功');
         addLog('后端连接成功');
       } catch {
@@ -250,12 +254,11 @@ function CalibrationPage() {
       addLog(`开始校准: ${v.arm_type} — ${v.arm_id}`);
 
       const params = buildParams();
-      const res = await calibrateApi.checkConfig(params);
+      const res = await wsService.calibrateCheckConfig(params);
 
-      if (res.data.code === 0 && res.data.data) {
-        const { exists, path } = res.data.data;
+      if (res.code === 0 && res.data) {
+        const { exists, path } = res.data;
         if (exists) {
-          // 存在配置文件，询问是重新校准还是使用现有
           Modal.confirm({
             title: '检测到已有配置文件',
             content: (
@@ -279,9 +282,9 @@ function CalibrationPage() {
         }
       }
     } catch (err: unknown) {
-      const e = err as { errorFields?: unknown; response?: { data?: { message?: string } } };
+      const e = err as { errorFields?: unknown; message?: string };
       if (e?.errorFields) return;
-      message.error(e?.response?.data?.message || '启动校准失败');
+      message.error((e as { message?: string }).message || '启动校准失败');
     } finally {
       setLoading(false);
     }
@@ -290,20 +293,21 @@ function CalibrationPage() {
   const startNewCalibration = async (params: { arm_type: string; arm_id: string; port: string }) => {
     try {
       setLoading(true);
-      const startRes = await calibrateApi.start(params);
-      if (startRes.data.code !== 0 || !startRes.data.data) {
-        throw new Error(startRes.data.message);
+      const startRes = await wsService.calibrateStart(params);
+      if (startRes.code !== 0 || !startRes.data) {
+        throw new Error(startRes.message);
       }
-      const sid = startRes.data.data.session_id;
+      const sid = startRes.data.session_id;
       setSessionId(sid);
       addLog(`会话: ${sid}`);
       addLog('设备已连接');
       setCalibrationStatus('校准中');
       setCurrentStep(CalibStep.SET_MIDDLE);
+      setManualOverrides({});
       showSetMiddleModal();
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      message.error(e?.response?.data?.message || '启动新校准失败');
+      const e = err as { message?: string };
+      message.error(e?.message || '启动新校准失败');
       setCurrentStep(CalibStep.IDLE);
       setCalibrationStatus('待开始');
     } finally {
@@ -314,25 +318,25 @@ function CalibrationPage() {
   const useExistingConfig = async () => {
     try {
       setLoading(true);
-      const startRes = await calibrateApi.start(buildParams());
-      if (startRes.data.code !== 0 || !startRes.data.data) {
-        throw new Error(startRes.data.message);
+      const startRes = await wsService.calibrateStart(buildParams());
+      if (startRes.code !== 0 || !startRes.data) {
+        throw new Error(startRes.message);
       }
-      const sid = startRes.data.data.session_id;
+      const sid = startRes.data.session_id;
       setSessionId(sid);
-      const useRes = await calibrateApi.useExisting(sid);
-      if (useRes.data.code === 0 && useRes.data.data) {
-        addLog(useRes.data.data.message);
+      const useRes = await wsService.calibrateUseExisting(sid);
+      if (useRes.code === 0 && useRes.data) {
+        addLog(useRes.data.message);
         message.success('成功应用现有校准配置');
         setCurrentStep(CalibStep.COMPLETED);
         setCalibrationStatus('校准完成');
         showCompletedModal();
       } else {
-        throw new Error(useRes.data.message);
+        throw new Error(useRes.message);
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      message.error(e?.response?.data?.message || '使用现有配置失败');
+      const e = err as { message?: string };
+      message.error(e?.message || '使用现有配置失败');
       await handleCancelCalibration();
     } finally {
       setLoading(false);
@@ -358,18 +362,18 @@ function CalibrationPage() {
     try {
       setLoading(true);
       addLog('正在设置中间位置...');
-      const res = await calibrateApi.setMiddle(sessionId);
-      if (res.data.code === 0) {
+      const res = await wsService.calibrateSetMiddle(sessionId);
+      if (res.code === 0) {
         addLog('中间位置已设置');
         setStepModalVisible(false);
         setCurrentStep(CalibStep.RECORD_RANGE);
         showRecordRangeModal();
       } else {
-        throw new Error(res.data.message);
+        throw new Error(res.message);
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      message.error(e?.response?.data?.message || '设置中间位置失败');
+      const e = err as { message?: string };
+      message.error(e?.message || '设置中间位置失败');
       addLog('设置中间位置失败');
       await handleCancelCalibration();
     } finally {
@@ -383,12 +387,68 @@ function CalibrationPage() {
     setStepModalVisible(true);
   };
 
+  // 发送手动关节值到后端
+  const handleManualJointChange = async (motor: string, value: number) => {
+    const newOverrides = { ...manualOverrides, [motor]: value };
+    setManualOverrides(newOverrides);
+    try {
+      await wsService.calibrateManualJointUpdate(sessionId, { [motor]: value });
+      addLog(`手动修正关节 ${motor} = ${value}`);
+    } catch {
+      // 静默失败，手动值已保存在本地状态
+    }
+  };
+
+  // 渲染可编辑的当前值单元格
+  const renderCurrentCell = (row: RecordRow) => {
+    const displayValue = manualOverrides[row.motor] ?? row.current;
+    const isEditing = editingMotor === row.motor;
+
+    if (isEditing) {
+      return (
+        <InputNumber
+          autoFocus
+          value={displayValue}
+          size="small"
+          style={{ width: 90 }}
+          onPressEnter={(e) => {
+            const v = parseFloat((e.target as HTMLInputElement).value);
+            if (!isNaN(v)) {
+              void handleManualJointChange(row.motor, v);
+            }
+            setEditingMotor(null);
+          }}
+          onBlur={(e) => {
+            const v = parseFloat((e.target as HTMLInputElement).value);
+            if (!isNaN(v)) void handleManualJointChange(row.motor, v);
+            setEditingMotor(null);
+          }}
+        />
+      );
+    }
+
+    const hasOverride = row.motor in manualOverrides;
+    return (
+      <span
+        style={{
+          cursor: 'pointer',
+          color: hasOverride ? '#faad14' : '#52c41a',
+          fontWeight: hasOverride ? 600 : 400,
+        }}
+        onClick={() => setEditingMotor(row.motor)}
+        title="点击手动修改当前值"
+      >
+        {hasOverride ? `${displayValue} ✎` : displayValue}
+      </span>
+    );
+  };
+
   const handleStartRecording = async () => {
     try {
       setLoading(true);
       addLog('开始记录运动范围...');
-      const res = await calibrateApi.startRecording(sessionId);
-      if (res.data.code === 0) {
+      const res = await wsService.calibrateStartRecording(sessionId);
+      if (res.code === 0) {
         addLog('正在记录，请移动机械臂...');
         setRecordingData([]);
 
@@ -409,12 +469,13 @@ function CalibrationPage() {
           max: 0,
         }));
         setRecordingData(initialData);
+        setManualOverrides({});
 
         const iv = setInterval(async () => {
           try {
-            const sr = await calibrateApi.getRecordingStatus(sessionId);
-            if (sr.data.code === 0 && sr.data.data?.positions) {
-              setRecordingData(sr.data.data.positions);
+            const sr = await wsService.calibrateRecordingStatus(sessionId);
+            if (sr.code === 0 && sr.data?.positions) {
+              setRecordingData(sr.data.positions);
             }
           } catch {
             /* ignore */
@@ -422,11 +483,11 @@ function CalibrationPage() {
         }, 150);
         setRecordingInterval(iv);
       } else {
-        throw new Error(res.data.message);
+        throw new Error(res.message);
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      message.error(e?.response?.data?.message || '开始记录失败');
+      const e = err as { message?: string };
+      message.error(e?.message || '开始记录失败');
       addLog('开始记录失败');
       await handleCancelCalibration();
     } finally {
@@ -442,17 +503,17 @@ function CalibrationPage() {
     try {
       setLoading(true);
       addLog('停止记录...');
-      const res = await calibrateApi.stopRecording(sessionId);
-      if (res.data.code === 0) {
+      const res = await wsService.calibrateStopRecording(sessionId);
+      if (res.code === 0) {
         addLog('记录完成');
         setStepModalVisible(false);
         await handleSaveCalibration();
       } else {
-        throw new Error(res.data.message);
+        throw new Error(res.message);
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      message.error(e?.response?.data?.message || '停止记录失败');
+      const e = err as { message?: string };
+      message.error(e?.message || '停止记录失败');
       addLog('停止记录失败');
       setCurrentStep(CalibStep.IDLE);
       setSessionId('');
@@ -465,19 +526,19 @@ function CalibrationPage() {
     try {
       setLoading(true);
       addLog('正在保存校准配置...');
-      const res = await calibrateApi.save(sessionId);
-      if (res.data.code === 0 && res.data.data) {
-        addLog(` ${res.data.data.message}`);
-        addLog(`${res.data.data.config_path}`);
+      const res = await wsService.calibrateSave(sessionId);
+      if (res.code === 0 && res.data) {
+        addLog(` ${res.data.message}`);
+        addLog(`${res.data.config_path}`);
         setCurrentStep(CalibStep.COMPLETED);
         setCalibrationStatus('校准完成');
         showCompletedModal();
       } else {
-        throw new Error(res.data.message);
+        throw new Error(res.message);
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      message.error(e?.response?.data?.message || '保存失败');
+      const e = err as { message?: string };
+      message.error(e?.message || '保存失败');
       setCurrentStep(CalibStep.IDLE);
       setSessionId('');
       setCalibrationStatus('待开始');
@@ -500,6 +561,7 @@ function CalibrationPage() {
         setCurrentStep(CalibStep.IDLE);
         setSessionId('');
         setRecordingData([]);
+        setManualOverrides({});
         setCalibrationStatus('待开始');
       },
     });
@@ -512,7 +574,7 @@ function CalibrationPage() {
     }
     if (sessionId) {
       try {
-        await calibrateApi.cancel(sessionId);
+        await wsService.calibrateCancel(sessionId);
         addLog('校准已取消');
       } catch {
         /* ignore */
@@ -522,6 +584,7 @@ function CalibrationPage() {
     setCurrentStep(CalibStep.IDLE);
     setSessionId('');
     setRecordingData([]);
+    setManualOverrides({});
     setCalibrationStatus('待开始');
   };
 
@@ -558,7 +621,7 @@ function CalibrationPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
-                  {['关节名称', '最小值', '当前值', '最大值'].map((h) => (
+                  {['关节名称', '最小值', '当前值（点击编辑）', '最大值'].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -584,8 +647,8 @@ function CalibrationPage() {
                     <td style={{ padding: '10px 12px', color: '#1890ff', borderBottom: '1px solid #f0f0f0' }}>
                       {row.min}
                     </td>
-                    <td style={{ padding: '10px 12px', color: '#52c41a', borderBottom: '1px solid #f0f0f0' }}>
-                      {row.current}
+                    <td style={{ padding: '10px 12px', borderBottom: '1px solid #f0f0f0' }}>
+                      {renderCurrentCell(row)}
                     </td>
                     <td style={{ padding: '10px 12px', color: '#ff4d4f', borderBottom: '1px solid #f0f0f0' }}>
                       {row.max}
@@ -594,6 +657,11 @@ function CalibrationPage() {
                 ))}
               </tbody>
             </table>
+            {Object.keys(manualOverrides).length > 0 && (
+              <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbe6', borderRadius: 4, fontSize: 12, color: '#ad6800' }}>
+                已手动修正 {Object.keys(manualOverrides).length} 个关节值（黄色高亮）
+              </div>
+            )}
           </div>
           <div
             style={{
@@ -606,7 +674,10 @@ function CalibrationPage() {
             }}
           >
             <RobotOutlined style={{ fontSize: 20, marginBottom: 8 }} />
-            <p style={{ margin: 0 }}>说明：校准逻辑为中位校准</p>
+            <p style={{ margin: 0, marginBottom: 8 }}>说明：校准逻辑为中位校准</p>
+            <p style={{ margin: 0, fontSize: 12, color: '#8c8c8c' }}>
+              当后端无法准确获取硬件数据时，可点击"当前值"单元格手动输入修正值。
+            </p>
           </div>
         </div>
       )}
