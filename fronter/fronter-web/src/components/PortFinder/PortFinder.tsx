@@ -63,7 +63,7 @@ function PortFinder({ onPortsChange, onLog, maxSelection, selectionType = 'check
     if (response.data.code === 0 && response.data.data) {
       const allPorts: PortInfo[] = response.data.data.ports;
       setPorts(allPorts);
-      // 后端是跨平台的，这里用“包含 lingzhi_”的通用规则做快速识别（匹配 path / description / hwid）
+      // 后端是跨平台的，这里用”包含 lingzhi_”的通用规则做快速识别（匹配 path / description / hwid）
       const fast = allPorts.filter((p) => {
         const s = `${p.path} ${p.description ?? ''} ${p.hwid ?? ''}`.toLowerCase();
         return s.includes('lingzhi_');
