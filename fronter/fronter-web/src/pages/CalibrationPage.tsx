@@ -186,10 +186,10 @@ function CalibrationPage() {
       try {
         await systemApi.health();
         setConnectionStatus('成功');
-        addLog('✅ 后端连接成功');
+        addLog('后端连接成功');
       } catch {
         setConnectionStatus('未连接');
-        addLog('❌ 后端未连接');
+        addLog('后端未连接');
       }
     };
     checkConnection();
@@ -209,7 +209,7 @@ function CalibrationPage() {
     setSelectedPorts(ports);
     if (ports.length > 0) {
       setSelectedPort(ports[0]);
-      addLog(`🔌 已选择端口: ${ports.join(', ')}`);
+      addLog(`已选择端口: ${ports.join(', ')}`);
     }
   };
 
@@ -247,7 +247,7 @@ function CalibrationPage() {
         return;
       }
       setLoading(true);
-      addLog(`🚀 开始校准: ${v.arm_type} — ${v.arm_id}`);
+      addLog(`开始校准: ${v.arm_type} — ${v.arm_id}`);
 
       const params = buildParams();
       const res = await calibrateApi.checkConfig(params);
@@ -296,8 +296,8 @@ function CalibrationPage() {
       }
       const sid = startRes.data.data.session_id;
       setSessionId(sid);
-      addLog(`📝 会话: ${sid}`);
-      addLog('📡 设备已连接');
+      addLog(`会话: ${sid}`);
+      addLog('设备已连接');
       setCalibrationStatus('校准中');
       setCurrentStep(CalibStep.SET_MIDDLE);
       showSetMiddleModal();
@@ -322,7 +322,7 @@ function CalibrationPage() {
       setSessionId(sid);
       const useRes = await calibrateApi.useExisting(sid);
       if (useRes.data.code === 0 && useRes.data.data) {
-        addLog(`✅ ${useRes.data.data.message}`);
+        addLog(useRes.data.data.message);
         message.success('成功应用现有校准配置');
         setCurrentStep(CalibStep.COMPLETED);
         setCalibrationStatus('校准完成');
@@ -357,10 +357,10 @@ function CalibrationPage() {
   const handleSetMiddle = async () => {
     try {
       setLoading(true);
-      addLog('⏳ 正在设置中间位置...');
+      addLog('正在设置中间位置...');
       const res = await calibrateApi.setMiddle(sessionId);
       if (res.data.code === 0) {
-        addLog('✅ 中间位置已设置');
+        addLog('中间位置已设置');
         setStepModalVisible(false);
         setCurrentStep(CalibStep.RECORD_RANGE);
         showRecordRangeModal();
@@ -370,7 +370,7 @@ function CalibrationPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       message.error(e?.response?.data?.message || '设置中间位置失败');
-      addLog('❌ 设置中间位置失败');
+      addLog('设置中间位置失败');
       await handleCancelCalibration();
     } finally {
       setLoading(false);
@@ -386,10 +386,10 @@ function CalibrationPage() {
   const handleStartRecording = async () => {
     try {
       setLoading(true);
-      addLog('📊 开始记录运动范围...');
+      addLog('开始记录运动范围...');
       const res = await calibrateApi.startRecording(sessionId);
       if (res.data.code === 0) {
-        addLog('✅ 正在记录，请移动机械臂...');
+        addLog('正在记录，请移动机械臂...');
         setRecordingData([]);
 
         const fixedMotors = [
@@ -427,7 +427,7 @@ function CalibrationPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       message.error(e?.response?.data?.message || '开始记录失败');
-      addLog('❌ 开始记录失败');
+      addLog('开始记录失败');
       await handleCancelCalibration();
     } finally {
       setLoading(false);
@@ -441,10 +441,10 @@ function CalibrationPage() {
     }
     try {
       setLoading(true);
-      addLog('⏸️ 停止记录...');
+      addLog('停止记录...');
       const res = await calibrateApi.stopRecording(sessionId);
       if (res.data.code === 0) {
-        addLog('✅ 记录完成');
+        addLog('记录完成');
         setStepModalVisible(false);
         await handleSaveCalibration();
       } else {
@@ -453,7 +453,7 @@ function CalibrationPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       message.error(e?.response?.data?.message || '停止记录失败');
-      addLog('❌ 停止记录失败');
+      addLog('停止记录失败');
       setCurrentStep(CalibStep.IDLE);
       setSessionId('');
     } finally {
@@ -464,11 +464,11 @@ function CalibrationPage() {
   const handleSaveCalibration = async () => {
     try {
       setLoading(true);
-      addLog('💾 正在保存校准配置...');
+      addLog('正在保存校准配置...');
       const res = await calibrateApi.save(sessionId);
       if (res.data.code === 0 && res.data.data) {
-        addLog(`✅ ${res.data.data.message}`);
-        addLog(`📁 ${res.data.data.config_path}`);
+        addLog(` ${res.data.data.message}`);
+        addLog(`${res.data.data.config_path}`);
         setCurrentStep(CalibStep.COMPLETED);
         setCalibrationStatus('校准完成');
         showCompletedModal();
@@ -492,7 +492,7 @@ function CalibrationPage() {
       content: (
         <div>
           <p style={{ color: '#52c41a', fontSize: 15 }}>
-            ✅ 校准成功！校准文件已保存至软件根目录下的校准文件夹中。
+            校准成功！校准文件已保存至软件根目录下的校准文件夹中。
           </p>
         </div>
       ),
@@ -513,7 +513,7 @@ function CalibrationPage() {
     if (sessionId) {
       try {
         await calibrateApi.cancel(sessionId);
-        addLog('🛑 校准已取消');
+        addLog('校准已取消');
       } catch {
         /* ignore */
       }
