@@ -480,7 +480,7 @@ function CalibrationPage() {
           } catch {
             /* ignore */
           }
-        }, 150);
+        }, 1000);
         setRecordingInterval(iv);
       } else {
         throw new Error(res.message);
