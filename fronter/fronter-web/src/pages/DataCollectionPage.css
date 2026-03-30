@@ -1,0 +1,95 @@
+/* 模态框遮罩 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  max-height: 90vh;
+  overflow-y: auto;
+  min-width: 400px;
+  max-width: 1200px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* 固定悬浮安全操作面板 */
+.safety-panel {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 160px;
+  background: #fff7e6;
+  border: 2px solid #ffd591;
+  border-radius: 8px;
+  padding: 16px;
+  z-index: 999;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.safety-panel-desc {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.safety-panel-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #d48806;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.safety-panel-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.safety-panel-buttons button {
+  width: 100%;
+}
+
+/* 配置卡片样式 */
+.config-card .ant-card-head {
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.config-card .ant-card-head-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.config-card .ant-card-body {
+  padding: 16px;
+}
+
+/* 状态指示灯动画 */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.status-recording {
+  animation: pulse 1.5s ease-in-out infinite;
+}

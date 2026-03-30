@@ -28,6 +28,11 @@ const menuItems: MenuItem[] = [
   {
     key: '/robot-control?tab=recording',
     icon: <VideoCameraOutlined />,
+    label: '数据采集（旧版）',
+  },
+  {
+    key: '/data-collection',
+    icon: <VideoCameraOutlined />,
     label: '数据采集',
   },
   {
@@ -57,6 +62,7 @@ function MainLayout() {
     if (path.startsWith('/home')) return '/home';
     if (path.startsWith('/calibration')) return '/calibration';
     if (path.startsWith('/motion-teaching')) return '/motion-teaching';
+    if (path.startsWith('/data-collection')) return '/data-collection';
     if (path.startsWith('/robot-control')) {
       const p = new URLSearchParams(location.search);
       const tab = p.get('tab') || 'teleoperation';

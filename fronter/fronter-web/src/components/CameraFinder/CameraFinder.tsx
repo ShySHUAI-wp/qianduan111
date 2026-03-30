@@ -14,7 +14,6 @@ interface CameraFinderProps {
 function CameraFinder({ onCamerasChange, onLog }: CameraFinderProps) {
   const [loading, setLoading] = useState(false);
   const [cameras, setCameras] = useState<CameraInfo[]>([]);
-  const [findModalVisible, setFindModalVisible] = useState(false);
   const [previewCamera, setPreviewCamera] = useState<CameraInfo | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
@@ -27,14 +26,25 @@ function CameraFinder({ onCamerasChange, onLog }: CameraFinderProps) {
     onLog?.(msg);
   };
 
-  // 开始查找相机
+  // 开始查找相机（显示确认对话框）
   const handleFindCamera = () => {
-    setFindModalVisible(true);
     addLog(' 准备查找相机');
+    Modal.confirm({
+      title: '查找相机',
+      content: '请确认已经插好相机 USB 接口，然后点击确定开始查找。',
+      okText: '确定',
+      cancelText: '取消',
+      onOk: async () => {
+        await doFindCamera();
+      },
+      onCancel: () => {
+        addLog(' 已取消相机查找');
+      },
+    });
   };
 
-  // 确认查找相机
-  const handleFindConfirm = async () => {
+  // 执行查找相机
+  const doFindCamera = async () => {
     setLoading(true);
     addLog(' 正在查找相机...');
 
@@ -66,14 +76,7 @@ function CameraFinder({ onCamerasChange, onLog }: CameraFinderProps) {
       addLog(` 查找相机失败: ${error}`);
     } finally {
       setLoading(false);
-      setFindModalVisible(false);
     }
-  };
-
-  // 取消查找
-  const handleFindCancel = () => {
-    setFindModalVisible(false);
-    addLog(' 已取消相机查找');
   };
 
   // 清除列表
@@ -255,19 +258,6 @@ function CameraFinder({ onCamerasChange, onLog }: CameraFinderProps) {
           locale={{ emptyText: '未找到相机,请点击"查找相机"开始查找' }}
         />
       </Space>
-
-      {/* 查找确认弹窗 */}
-      <Modal
-        title="查找相机"
-        open={findModalVisible}
-        onOk={handleFindConfirm}
-        onCancel={handleFindCancel}
-        okText="确定"
-        cancelText="取消"
-        confirmLoading={loading}
-      >
-        <p>请确认已经插好相机 USB 接口，然后点击确定开始查找。</p>
-      </Modal>
 
       {/* 相机预览弹窗 */}
       {previewCamera && (
