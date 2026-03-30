@@ -126,7 +126,7 @@ function MainLayout() {
         theme="light"
         width={siderWidth}
         className={styles.sider}
-        style={{ position: 'relative' }}
+        style={{ position: 'fixed', left: 0, top: 0, height: '100vh', zIndex: 1000 }}
       >
         <div className={styles.siderHeader}>
           {collapsed ? (

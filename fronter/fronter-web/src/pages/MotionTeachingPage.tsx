@@ -79,13 +79,13 @@ function MotionTeachingPage() {
         const resp = await fetch('/api/health');
         if (resp.ok) {
           setConnectionStatus('connected');
-          addLog('✅ 后端连接成功');
+          addLog('后端连接成功');
         } else {
           throw new Error();
         }
       } catch {
         setConnectionStatus('disconnected');
-        addLog('❌ 后端未连接');
+        addLog('后端未连接');
       }
     };
     checkConnection();
@@ -130,19 +130,19 @@ function MotionTeachingPage() {
   // 操作臂端口变化
   const handleRobotPortsChange = (ports: string[]) => {
     setSelectedRobotPorts(ports);
-    addLog(`🤖 已选择操作臂端口: ${ports.join(', ') || '(无)'}`);
+    addLog(`已选择操作臂端口: ${ports.join(', ') || '(无)'}`);
   };
 
   // 示教臂端口变化
   const handleTeleopPortsChange = (ports: string[]) => {
     setSelectedTeleopPorts(ports);
-    addLog(`🎮 已选择示教臂端口: ${ports.join(', ') || '(无)'}`);
+    addLog(`已选择示教臂端口: ${ports.join(', ') || '(无)'}`);
   };
 
   // 相机变化
   const handleCamerasChange = (cameras: CameraInfo[]) => {
     setSelectedCameras(cameras);
-    addLog(`📹 已选择 ${cameras.length} 个相机`);
+    addLog(`已选择 ${cameras.length} 个相机`);
 
     const newRotations = new Map(cameraRotations);
     cameras.forEach((camera) => {
@@ -160,26 +160,26 @@ function MotionTeachingPage() {
     const newRotations = new Map(cameraRotations);
     newRotations.set(cameraKey, !newRotations.get(cameraKey));
     setCameraRotations(newRotations);
-    addLog(`🔄 ${camera.name} 翻转${newRotations.get(cameraKey) ? '已启用' : '已禁用'}`);
+    addLog(`${camera.name} 翻转${newRotations.get(cameraKey) ? '已启用' : '已禁用'}`);
   };
 
   // 清除操作臂端口
   const handleClearRobotPorts = () => {
     setSelectedRobotPorts([]);
-    addLog('🗑️ 已清除操作臂端口配置');
+    addLog('已清除操作臂端口配置');
   };
 
   // 清除示教臂端口
   const handleClearTeleopPorts = () => {
     setSelectedTeleopPorts([]);
-    addLog('🗑️ 已清除示教臂端口配置');
+    addLog('已清除示教臂端口配置');
   };
 
   // 清除相机
   const handleClearCameras = () => {
     setSelectedCameras([]);
     setCameraRotations(new Map());
-    addLog('🗑️ 已清除相机配置');
+    addLog('已清除相机配置');
   };
 
   // 渲染设备列表
@@ -268,7 +268,7 @@ function MotionTeachingPage() {
         return;
       }
 
-      addLog('🚀 正在启动遥操...');
+      addLog('正在启动遥操...');
       setTeleopStatus('starting');
 
       // 构建请求数据
@@ -347,7 +347,7 @@ function MotionTeachingPage() {
         const cmdId = result.data.commandId;
         setCommandId(cmdId);
         setRerunUrl(result.data.rerunUrl);
-        addLog(`✅ 遥操已启动，命令ID: ${cmdId}`);
+        addLog(`遥操已启动，命令ID: ${cmdId}`);
         setTeleopStatus('running');
 
         // 订阅 WebSocket 命令输出
@@ -360,7 +360,7 @@ function MotionTeachingPage() {
 
         const unsubError = wsService.on('error', (data: { commandId: string; message: string }) => {
           if (data.commandId === cmdId) {
-            addLog(`❌ 错误: ${data.message}`);
+            addLog(`错误: ${data.message}`);
           }
         });
 
@@ -368,7 +368,7 @@ function MotionTeachingPage() {
           if (data.commandId === cmdId) {
             if (data.status === 'stopped' || data.status === 'error') {
               setTeleopStatus('stopped');
-              addLog(`📊 命令状态: ${data.status}`);
+              addLog(`命令状态: ${data.status}`);
             }
           }
         });
@@ -381,14 +381,14 @@ function MotionTeachingPage() {
         };
 
         if (values.displayData && result.data.rerunUrl) {
-          addLog('📊 Rerun可视化已启动');
+          addLog('Rerun可视化已启动');
         }
       } else {
         throw new Error(result.message || '启动失败');
       }
     } catch (error: any) {
       message.error(`启动失败: ${error.message}`);
-      addLog(`❌ 启动失败: ${error.message}`);
+      addLog(`启动失败: ${error.message}`);
       setTeleopStatus('idle');
     }
   };
@@ -399,7 +399,7 @@ function MotionTeachingPage() {
 
     try {
       setTeleopStatus('stopping');
-      addLog('⏸️ 正在停止遥操...');
+      addLog('正在停止遥操...');
 
       const response = await fetch('/api/commands/stop', {
         method: 'POST',
@@ -411,7 +411,7 @@ function MotionTeachingPage() {
 
       if (result.code === 0) {
         message.success('遥操已停止');
-        addLog('⏹️ 遥操已停止');
+        addLog('遥操已停止');
         setTeleopStatus('stopped');
 
         if (unsubscribeRef.current) {
@@ -423,7 +423,7 @@ function MotionTeachingPage() {
       }
     } catch (error: any) {
       message.error(`停止失败: ${error.message}`);
-      addLog(`❌ 停止失败: ${error.message}`);
+      addLog(`停止失败: ${error.message}`);
       setTeleopStatus('running');
     }
   };
@@ -488,7 +488,7 @@ function MotionTeachingPage() {
 
               <Form.Item label="机器人端口">
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  <Button icon={<UsbOutlined />} onClick={() => setRobotPortModalVisible(true)} block>
+                  <Button type="primary" icon={<UsbOutlined />} onClick={() => setRobotPortModalVisible(true)} block>
                     {selectedRobotPorts.length > 0 ? '修改端口' : '配置端口'}
                   </Button>
                   {renderDeviceList(
@@ -519,7 +519,7 @@ function MotionTeachingPage() {
 
               <Form.Item label="遥操端口">
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  <Button icon={<UsbOutlined />} onClick={() => setTeleopPortModalVisible(true)} block>
+                  <Button type="primary" icon={<UsbOutlined />} onClick={() => setTeleopPortModalVisible(true)} block>
                     {selectedTeleopPorts.length > 0 ? '修改端口' : '配置端口'}
                   </Button>
                   {renderDeviceList(
@@ -539,7 +539,7 @@ function MotionTeachingPage() {
             {/* 相机与其他配置 */}
             <Card className="config-card" title="相机与其他配置" style={{ marginBottom: 16 }}>
               <Space direction="vertical" style={{ width: '100%' }}>
-                <Button icon={<VideoCameraOutlined />} onClick={() => setCameraModalVisible(true)} block>
+                <Button type="primary" icon={<VideoCameraOutlined />} onClick={() => setCameraModalVisible(true)} block>
                   {selectedCameras.length > 0 ? '修改相机' : '配置相机'}
                 </Button>
                 {renderCameraList()}

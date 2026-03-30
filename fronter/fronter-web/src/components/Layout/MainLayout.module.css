@@ -34,12 +34,18 @@
   padding: 24px;
   min-height: 280px;
   background: #fff;
+  margin-left: 260px;
 }
 
 /* 侧边栏 */
 .sider {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-  position: relative;
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 1000;
 }
 
 /* 拖动手柄 */
