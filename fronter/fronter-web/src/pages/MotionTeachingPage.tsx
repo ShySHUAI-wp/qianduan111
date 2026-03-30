@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Typography, Card, Form, Select, Input, Button, Space, Tag, Affix, Row, Col, message, Tabs } from 'antd';
-import { UsbOutlined, VideoCameraOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
+import { UsbOutlined, VideoCameraOutlined, PlayCircleOutlined, StopOutlined, CopyOutlined, ClearOutlined } from '@ant-design/icons';
 import PortFinder from '@/components/PortFinder';
 import CameraFinder from '@/components/CameraFinder';
 import LogViewer from '@/components/LogViewer';
 import { wsService } from '@/services/socket';
+import ReactECharts from 'echarts-for-react';
 import type { CameraInfo } from '@/types';
 import './MotionTeachingPage.css';
 
@@ -46,7 +47,7 @@ function MotionTeachingPage() {
 
   // 遥操状态
   const [teleopStatus, setTeleopStatus] = useState<TeleopStatus>('idle');
-  const [activeTab, setActiveTab] = useState<'wired' | 'wireless'>('wired');
+  const [activeTab, setActiveTab] = useState<'wired' | 'wireless'>('wireless');
   const [commandId, setCommandId] = useState<string | null>(null);
   const [rerunUrl, setRerunUrl] = useState<string | null>(null);
 
@@ -67,6 +68,15 @@ function MotionTeachingPage() {
 
   // 日志
   const [logs, setLogs] = useState<string[]>([]);
+
+  // 关节数据实时图表
+  const [jointData, setJointData] = useState<{ time: number; values: number[] }[]>([]);
+  const jointDataRef = useRef<{ time: number; values: number[] }[]>([]);
+  const MAX_DATA_POINTS = 50;
+
+  // 无线遥操作状态
+  const [wirelessRobotIp, setWirelessRobotIp] = useState<string>('');
+  const [wirelessTeleopStatus, setWirelessTeleopStatus] = useState<'idle' | 'running' | 'stopping'>('idle');
 
   // WebSocket 取消订阅函数
   const unsubscribeRef = useRef<(() => void) | null>(null);
@@ -102,6 +112,41 @@ function MotionTeachingPage() {
 
   const addLog = (msg: string) => {
     setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  };
+
+  // 更新关节数据（供外部调用或WebSocket事件触发）
+  const updateJointData = useCallback((values: number[]) => {
+    const newPoint = { time: Date.now(), values };
+    jointDataRef.current = [...jointDataRef.current, newPoint].slice(-MAX_DATA_POINTS);
+    setJointData([...jointDataRef.current]);
+  }, []);
+
+  // 无线遥操开始（机器人端）
+  const handleWirelessRobotStart = () => {
+    addLog('无线遥操：机器人端启动');
+    setWirelessTeleopStatus('running');
+  };
+
+  // 无线遥操停止（机器人端）
+  const handleWirelessRobotStop = () => {
+    addLog('无线遥操：机器人端停止');
+    setWirelessTeleopStatus('idle');
+  };
+
+  // 无线遥操开始（电脑端）
+  const handleWirelessComputerStart = async () => {
+    if (!wirelessRobotIp) {
+      message.error('请输入机器人IP地址');
+      return;
+    }
+    addLog(`无线遥操：电脑端启动，连接 ${wirelessRobotIp}`);
+    setWirelessTeleopStatus('running');
+  };
+
+  // 无线遥操停止（电脑端）
+  const handleWirelessComputerStop = () => {
+    addLog('无线遥操：电脑端停止');
+    setWirelessTeleopStatus('idle');
   };
 
   // 判断是否为双臂
@@ -428,6 +473,69 @@ function MotionTeachingPage() {
     }
   };
 
+  // 关节数据图表配置
+  const jointChartOption = useMemo(() => {
+    const jointNames = ['关节1', '关节2', '关节3', '关节4', '关节5', '关节6'];
+    const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272'];
+
+    const series = jointNames.map((name, index) => ({
+      name,
+      type: 'line' as const,
+      smooth: true,
+      symbol: 'none',
+      lineStyle: { width: 2 },
+      data: jointData.map((d) => d.values[index] ?? 0),
+    }));
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' },
+      },
+      legend: {
+        data: jointNames,
+        top: 0,
+        textStyle: { fontSize: 10 },
+      },
+      grid: { left: 50, right: 20, top: 30, bottom: 30 },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: jointData.map((d) => {
+          const date = new Date(d.time);
+          return `${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`;
+        }),
+        axisLabel: { fontSize: 9, rotate: 45 },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: { fontSize: 10 },
+        scale: true,
+      },
+      series,
+      color: colors,
+    };
+  }, [jointData]);
+
+  // 关节数据图表组件
+  const jointChartPanel = useMemo(
+    () => (
+      <Card
+        title="关节数据实时展示"
+        extra={<Tag color="blue">更新中</Tag>}
+        styles={{ body: { padding: '12px 12px 0 12px' } }}
+        style={{ marginBottom: 16 }}
+      >
+        <ReactECharts
+          option={jointChartOption}
+          style={{ height: 280, width: '100%' }}
+          opts={{ renderer: 'canvas' }}
+        />
+      </Card>
+    ),
+    [jointChartOption]
+  );
+
   // 日志面板
   const logPanel = useMemo(
     () => (
@@ -588,6 +696,7 @@ function MotionTeachingPage() {
 
         {/* 右侧日志面板 */}
         <Col xs={24} xl={9}>
+          {jointChartPanel}
           {logPanel}
         </Col>
         </Row>
@@ -597,8 +706,107 @@ function MotionTeachingPage() {
           key: 'wireless',
           label: '无线遥操作',
           children: (
-            <div style={{ padding: 20, textAlign: 'center', color: '#999' }}>
-              无线遥操作功能开发中...
+            <div className="wireless-teleop-page">
+              {/* 主标题 */}
+              <Typography.Title level={3} className="wireless-main-title">
+                遥操机械臂
+              </Typography.Title>
+
+              {/* 双模块布局 */}
+              <Row gutter={24} className="wireless-content-row">
+                {/* 机器人端 */}
+                <Col xs={24} md={12}>
+                  <div className="wireless-module">
+                    <h4 className="wireless-module-title">机器人端</h4>
+                    <p className="wireless-module-desc">请在机器人端，启动机械臂</p>
+                    <Space>
+                      <Button
+                        type="primary"
+                        icon={<PlayCircleOutlined />}
+                        onClick={handleWirelessRobotStart}
+                        disabled={wirelessTeleopStatus === 'running'}
+                      >
+                        开始遥操
+                      </Button>
+                      <Button
+                        danger
+                        icon={<StopOutlined />}
+                        onClick={handleWirelessRobotStop}
+                        disabled={wirelessTeleopStatus !== 'running'}
+                      >
+                        停止遥操
+                      </Button>
+                    </Space>
+                  </div>
+                </Col>
+
+                {/* 电脑端 */}
+                <Col xs={24} md={12}>
+                  <div className="wireless-module">
+                    <h4 className="wireless-module-title">电脑端</h4>
+                    <div className="wireless-form-item">
+                      <span className="wireless-form-label">机器人IP地址:</span>
+                      <Input
+                        placeholder="请输入"
+                        className="wireless-form-input"
+                        value={wirelessRobotIp}
+                        onChange={(e) => setWirelessRobotIp(e.target.value)}
+                      />
+                    </div>
+                    <Space>
+                      <Button
+                        type="primary"
+                        icon={<PlayCircleOutlined />}
+                        onClick={handleWirelessComputerStart}
+                        disabled={wirelessTeleopStatus === 'running'}
+                      >
+                        开始遥操
+                      </Button>
+                      <Button
+                        danger
+                        icon={<StopOutlined />}
+                        onClick={handleWirelessComputerStop}
+                        disabled={wirelessTeleopStatus !== 'running'}
+                      >
+                        停止遥操
+                      </Button>
+                    </Space>
+                  </div>
+                </Col>
+              </Row>
+
+              {/* 日志输出模块 */}
+              <div className="wireless-log-section">
+                <div className="wireless-log-header">
+                  <h4 className="wireless-log-title">日志输出</h4>
+                  <Space>
+                    <Button
+                      size="small"
+                      icon={<CopyOutlined />}
+                      onClick={() => {
+                        const text = logs.join('\n');
+                        navigator.clipboard.writeText(text);
+                      }}
+                    >
+                      复制
+                    </Button>
+                    <Button size="small" icon={<ClearOutlined />} onClick={() => setLogs([])}>
+                      清空
+                    </Button>
+                  </Space>
+                </div>
+                <div className="wireless-log-terminal">
+                  {logs.length === 0 ? (
+                    <div className="wireless-log-placeholder">这是终端控制台，用于输出日志</div>
+                  ) : (
+                    logs.map((log, index) => (
+                      <div key={index} style={{ marginBottom: 4 }}>
+                        {log}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           ),
         },

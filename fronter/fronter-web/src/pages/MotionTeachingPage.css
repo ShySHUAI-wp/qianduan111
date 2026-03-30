@@ -34,3 +34,94 @@
 .modal-content .ant-card-body {
   padding: 16px;
 }
+
+/* 关节数据图表容器 */
+.joint-chart-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* 无线遥操作页面 */
+.wireless-teleop-page {
+  padding: 16px 0;
+}
+
+.wireless-main-title {
+  margin-bottom: 24px !important;
+  font-weight: bold;
+}
+
+.wireless-content-row {
+  margin-bottom: 32px;
+}
+
+.wireless-module {
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  height: 100%;
+}
+
+.wireless-module-title {
+  margin: 0 0 8px 0;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.wireless-module-desc {
+  color: #999;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.wireless-form-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.wireless-form-label {
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.wireless-form-input {
+  flex: 1;
+}
+
+.wireless-log-section {
+  margin-top: 24px;
+}
+
+.wireless-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.wireless-log-title {
+  margin: 0;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.wireless-log-terminal {
+  background: #1e1e1e;
+  color: #fff;
+  padding: 16px;
+  border-radius: 4px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: Consolas, Monaco, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.wireless-log-placeholder {
+  color: #888;
+  text-align: center;
+  line-height: 168px;
+}
