@@ -47,7 +47,7 @@ function MotionTeachingPage() {
 
   // 遥操状态
   const [teleopStatus, setTeleopStatus] = useState<TeleopStatus>('idle');
-  const [activeTab, setActiveTab] = useState<'wired' | 'wireless'>('wireless');
+  const [activeTab, setActiveTab] = useState<'wired' | 'wireless'>('wired');
   const [commandId, setCommandId] = useState<string | null>(null);
   const [rerunUrl, setRerunUrl] = useState<string | null>(null);
 
@@ -77,6 +77,10 @@ function MotionTeachingPage() {
   // 无线遥操作状态
   const [wirelessRobotIp, setWirelessRobotIp] = useState<string>('');
   const [wirelessTeleopStatus, setWirelessTeleopStatus] = useState<'idle' | 'running' | 'stopping'>('idle');
+
+  // Rerun可视化状态
+  const [rerunVisible, setRerunVisible] = useState(false);
+  const [displayDataEnabled, setDisplayDataEnabled] = useState(false);
 
   // WebSocket 取消订阅函数
   const unsubscribeRef = useRef<(() => void) | null>(null);
@@ -427,6 +431,7 @@ function MotionTeachingPage() {
 
         if (values.displayData && result.data.rerunUrl) {
           addLog('Rerun可视化已启动');
+          setRerunVisible(true);
         }
       } else {
         throw new Error(result.message || '启动失败');
@@ -458,6 +463,7 @@ function MotionTeachingPage() {
         message.success('遥操已停止');
         addLog('遥操已停止');
         setTeleopStatus('stopped');
+        setRerunVisible(false);
 
         if (unsubscribeRef.current) {
           unsubscribeRef.current();
@@ -653,7 +659,7 @@ function MotionTeachingPage() {
                 {renderCameraList()}
 
                 <Form.Item name="displayData" label="数据显示" style={{ marginBottom: 8 }}>
-                  <Select>
+                  <Select onChange={(value) => setDisplayDataEnabled(value === true)}>
                     <Option value={false}>不显示</Option>
                     <Option value={true}>显示（Rerun可视化）</Option>
                   </Select>
@@ -666,26 +672,22 @@ function MotionTeachingPage() {
             </Card>
 
             {/* 开始/停止按钮 */}
-            <Card className="config-card" title="操作">
-              <Space direction="vertical" style={{ width: '100%' }}>
+            <Card className="config-card" title="操作" styles={{ body: { textAlign: 'center' } }}>
+              <Space>
                 <Button
                   type="primary"
-                  size="large"
                   icon={<PlayCircleOutlined />}
                   onClick={handleStartTeleoperation}
                   disabled={teleopStatus === 'running' || teleopStatus === 'starting'}
                   loading={teleopStatus === 'starting'}
-                  block
                 >
-                  开始遥操作
+                  开始遥操
                 </Button>
                 <Button
                   danger
-                  size="large"
                   icon={<StopOutlined />}
                   onClick={handleStopTeleoperation}
                   disabled={teleopStatus !== 'running'}
-                  block
                 >
                   停止遥操
                 </Button>
@@ -697,6 +699,20 @@ function MotionTeachingPage() {
         {/* 右侧日志面板 */}
         <Col xs={24} xl={9}>
           {jointChartPanel}
+          {displayDataEnabled && rerunUrl && rerunVisible && (
+            <Card
+              title="Rerun可视化"
+              extra={<Button size="small" onClick={() => setRerunVisible(false)}>关闭</Button>}
+              style={{ marginBottom: 16 }}
+              styles={{ body: { padding: 0 } }}
+            >
+              <iframe
+                src={rerunUrl}
+                style={{ width: '100%', height: '400px', border: 'none' }}
+                title="Rerun Visualization"
+              />
+            </Card>
+          )}
           {logPanel}
         </Col>
         </Row>
