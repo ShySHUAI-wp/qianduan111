@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Typography, Card, Form, Select, Input, Button, Space, Tag, Affix, Row, Col, message, Tabs } from 'antd';
+import { Typography, Card, Form, Select, Input, Button, Space, Tag, Affix, Row, Col, message, Tabs, Modal } from 'antd';
 import { UsbOutlined, VideoCameraOutlined, PlayCircleOutlined, StopOutlined, CopyOutlined, ClearOutlined } from '@ant-design/icons';
 import PortFinder from '@/components/PortFinder';
 import CameraFinder from '@/components/CameraFinder';
@@ -830,42 +830,36 @@ function MotionTeachingPage() {
       />
 
       {/* 操作臂端口配置弹窗 */}
-      {robotPortModalVisible && (
-        <div className="modal-overlay" onClick={() => setRobotPortModalVisible(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <Card
-              title={isRobotDual ? '配置操作臂端口（双臂 - 需要2个端口）' : '配置操作臂端口（单臂 - 需要1个端口）'}
-              extra={<Button onClick={() => setRobotPortModalVisible(false)}>关闭</Button>}
-            >
-              <PortFinder
-                onPortsChange={handleRobotPortsChange}
-                onLog={addLog}
-                maxSelection={isRobotDual ? 2 : 1}
-                selectionType="checkbox"
-              />
-            </Card>
-          </div>
-        </div>
-      )}
+      <Modal
+        title={isRobotDual ? '配置操作臂端口（双臂 - 需要2个端口）' : '配置操作臂端口（单臂 - 需要1个端口）'}
+        open={robotPortModalVisible}
+        onCancel={() => setRobotPortModalVisible(false)}
+        footer={null}
+        width={900}
+      >
+        <PortFinder
+          onPortsChange={handleRobotPortsChange}
+          onLog={addLog}
+          maxSelection={isRobotDual ? 2 : 1}
+          selectionType="checkbox"
+        />
+      </Modal>
 
       {/* 示教臂端口配置弹窗 */}
-      {teleopPortModalVisible && (
-        <div className="modal-overlay" onClick={() => setTeleopPortModalVisible(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <Card
-              title={isTeleopDual ? '配置示教臂端口（双臂 - 需要2个端口）' : '配置示教臂端口（单臂 - 需要1个端口）'}
-              extra={<Button onClick={() => setTeleopPortModalVisible(false)}>关闭</Button>}
-            >
-              <PortFinder
-                onPortsChange={handleTeleopPortsChange}
-                onLog={addLog}
-                maxSelection={isTeleopDual ? 2 : 1}
-                selectionType="checkbox"
-              />
-            </Card>
-          </div>
-        </div>
-      )}
+      <Modal
+        title={isTeleopDual ? '配置示教臂端口（双臂 - 需要2个端口）' : '配置示教臂端口（单臂 - 需要1个端口）'}
+        open={teleopPortModalVisible}
+        onCancel={() => setTeleopPortModalVisible(false)}
+        footer={null}
+        width={900}
+      >
+        <PortFinder
+          onPortsChange={handleTeleopPortsChange}
+          onLog={addLog}
+          maxSelection={isTeleopDual ? 2 : 1}
+          selectionType="checkbox"
+        />
+      </Modal>
 
       {/* 相机配置弹窗 */}
       {cameraModalVisible && (

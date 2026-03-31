@@ -127,9 +127,13 @@ function DataCollectionPage() {
   const [totalTime, setTotalTime] = useState(0);
   const [remainingTime, setRemainingTime] = useState(0);
 
+  // Rerun可视化开关
+  const [rerunEnabled, setRerunEnabled] = useState(false);
+
   // 倒计时
   const [countdown, setCountdown] = useState(5);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownMsgIndexRef = useRef<number | null>(null);
 
   // 回正倒计时
   const [resetCountdown, setResetCountdown] = useState<number | null>(null);
@@ -491,17 +495,36 @@ function DataCollectionPage() {
     }
     setCountdown(5);
     setPhase('countdown');
-    addServerMessage('即将开始采集：5 秒倒计时...');
+
+    // 添加初始倒计时消息并记录索引
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+    setServerMessages((prev) => {
+      const newMessages = [...prev.slice(-99), { time, text: '即将开始采集：5 秒倒计时...' }];
+      countdownMsgIndexRef.current = newMessages.length - 1;
+      return newMessages;
+    });
 
     countdownTimerRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
           countdownTimerRef.current = null;
+          countdownMsgIndexRef.current = null;
           void doBegin();
           return 0;
         }
-        return prev - 1;
+        // 更新倒计时消息
+        const newVal = prev - 1;
+        setServerMessages((msgs) => {
+          const updated = [...msgs];
+          const idx = countdownMsgIndexRef.current;
+          if (idx !== null && idx >= 0 && idx < updated.length && updated[idx].text.includes('秒倒计时')) {
+            updated[idx] = { ...updated[idx], text: `即将开始采集：${newVal} 秒倒计时...` };
+          }
+          return updated;
+        });
+        return newVal;
       });
     }, 1000);
   };
@@ -812,6 +835,54 @@ function DataCollectionPage() {
     );
   };
 
+  // ===================== 渲染：录制中控制面板 =====================
+
+  const renderRecordingPanel = () => {
+    if (phase !== 'recording') return null;
+
+    // 当前轮次时间进度
+    const timePercent = totalTime > 0 ? Math.round(((totalTime - remainingTime) / totalTime) * 100) : 0;
+
+    return (
+      <Card size="small" style={{ background: '#fff7e6', border: '1px solid #ffd591', marginBottom: 16 }}>
+        {/* 进度信息 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+          <span>Episode {currentEpisode} / {totalEpisodes}</span>
+          <span>录制中 (剩余 {remainingTime.toFixed(1)}s)</span>
+        </div>
+
+        {/* 进度条 */}
+        <Progress
+          percent={timePercent}
+          status="active"
+          strokeColor="#fa8c16"
+        />
+
+        {/* 录制中状态 */}
+        <div style={{ textAlign: 'center', padding: '8px', background: '#fa8c16', color: '#fff', borderRadius: 4, marginTop: 12 }}>
+          录制中
+        </div>
+
+        {/* 按钮行 */}
+        <Row gutter={16} style={{ marginTop: 16 }}>
+          <Col span={16}>
+            <Space>
+              <Button icon={<FastForwardOutlined />} onClick={handleNext}>下一轮(保存)</Button>
+              <Button icon={<UndoOutlined />} onClick={handleRerecord}>重新录制</Button>
+            </Space>
+          </Col>
+          <Col span={8} style={{ textAlign: 'right' }}>
+            <Space>
+              <Text>Rerun:</Text>
+              <Switch checked={rerunEnabled} onChange={setRerunEnabled} />
+              <Button danger icon={<StopOutlined />} onClick={handleEmergencyStop}>急停</Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+    );
+  };
+
   // ===================== 渲染：控制按钮 =====================
 
   const renderControlButtons = () => {
@@ -1070,28 +1141,17 @@ function DataCollectionPage() {
         </Space>
       </div>
 
-      <Row gutter={16} align="top">
-        {/* 左侧表单区域 */}
-        <Col xs={24} xl={15}>
-          <Form
-            form={form}
-            layout="vertical"
-            initialValues={{
-              robotType: 'so101_follower',
-              robotId: 'my_awesome_follower_arm',
-              teleopType: 'so101_leader',
-              teleopId: 'my_awesome_leader_arm',
-              datasetName: 'my_dataset',
-              datasetSingleTask: 'Grab a block',
-              datasetFps: 30,
-              datasetNumEpisodes: 30,
-              datasetEpisodeTimeS: 30,
-              datasetResetTimeS: 20,
-              displayData: false,
-            }}
-          >
-            {/* 机器人(操作臂)配置 */}
-            <Card className="config-card" title="机器人（操作臂）配置" style={{ marginBottom: 16 }}>
+      <Row gutter={16} align="top" style={{ marginBottom: 16 }}>
+        {/* 第一行：操作臂配置 + 示教臂配置 */}
+        <Col xs={24} md={12}>
+          <Card className="config-card" title="机器人（操作臂）配置" style={{ marginBottom: 0, height: '100%' }}>
+            <Form
+              form={form}
+              layout="vertical"
+              initialValues={{
+                robotType: 'so101_follower',
+              }}
+            >
               <Form.Item
                 label="机器臂类型"
                 name="robotType"
@@ -1133,10 +1193,19 @@ function DataCollectionPage() {
               >
                 <Input placeholder="请输入" disabled={isActive} />
               </Form.Item>
-            </Card>
+            </Form>
+          </Card>
+        </Col>
 
-            {/* 示教臂配置 */}
-            <Card className="config-card" title="示教臂配置" style={{ marginBottom: 16 }}>
+        <Col xs={24} md={12}>
+          <Card className="config-card" title="示教臂配置" style={{ marginBottom: 0, height: '100%' }}>
+            <Form
+              form={form}
+              layout="vertical"
+              initialValues={{
+                teleopType: 'so101_leader',
+              }}
+            >
               <Form.Item
                 label="示教臂类型"
                 name="teleopType"
@@ -1178,83 +1247,117 @@ function DataCollectionPage() {
               >
                 <Input placeholder="请输入" disabled={isActive} />
               </Form.Item>
-            </Card>
+            </Form>
+          </Card>
+        </Col>
+      </Row>
 
-            {/* 相机配置 */}
-            <Card className="config-card" title="相机配置" style={{ marginBottom: 16 }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Button
-                  type="primary"
-                  icon={<VideoCameraOutlined />}
-                  onClick={() => setCameraModalVisible(true)}
-                  disabled={isActive}
-                >
-                  {selectedCameras.length > 0 ? '修改相机' : '配置相机'}
-                </Button>
-                {renderCameraList()}
+      <Row gutter={16} align="top">
+        {/* 左侧：相机配置 + 数据集配置 + 操作 */}
+        <Col xs={24} xl={15}>
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{
+              datasetFps: 30,
+              datasetNumEpisodes: 30,
+              datasetEpisodeTimeS: 30,
+              datasetResetTimeS: 20,
+              displayData: false,
+            }}
+          >
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              {/* 相机配置 - 全宽 */}
+              <Col xs={24}>
+                <Card className="config-card" title="相机配置" style={{ marginBottom: 0 }}>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Button
+                      type="primary"
+                      icon={<VideoCameraOutlined />}
+                      onClick={() => setCameraModalVisible(true)}
+                      disabled={isActive}
+                    >
+                      {selectedCameras.length > 0 ? '修改相机' : '配置相机'}
+                    </Button>
+                    {renderCameraList()}
+                  </Space>
+                </Card>
+              </Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              {/* 数据集配置 - 全宽 */}
+              <Col xs={24}>
+                <Card className="config-card" title="数据集配置" style={{ marginBottom: 0 }}>
+                  <Form.Item
+                    label="数据集名称"
+                    name="datasetName"
+                    rules={[{ required: true, message: '请输入数据集名称' }]}
+                  >
+                    <Input placeholder="请输入" disabled={isActive} />
+                  </Form.Item>
+                  <Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
+                    格式示例: my_dataset
+                  </Paragraph>
+
+                  <Form.Item
+                    label="任务描述"
+                    name="datasetSingleTask"
+                    rules={[{ required: true, message: '请输入任务描述' }]}
+                  >
+                    <Input.TextArea placeholder="请输入任务描述" rows={2} disabled={isActive} />
+                  </Form.Item>
+                </Card>
+              </Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col span={12}>
+                <Form.Item label="帧率 (FPS)" name="datasetFps" style={{ marginBottom: 0 }}>
+                  <InputNumber min={1} max={120} defaultValue={30} style={{ width: '100%' }} disabled={isActive} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="采集轮数" name="datasetNumEpisodes" style={{ marginBottom: 0 }}>
+                  <InputNumber min={1} max={100} defaultValue={30} style={{ width: '100%' }} disabled={isActive} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col span={12}>
+                <Form.Item label="每轮录制时长 (秒)" name="datasetEpisodeTimeS" style={{ marginBottom: 0 }}>
+                  <InputNumber min={1} max={300} defaultValue={30} style={{ width: '100%' }} disabled={isActive} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="重置时长 (秒)" name="datasetResetTimeS" style={{ marginBottom: 0 }}>
+                  <InputNumber min={1} max={300} defaultValue={20} style={{ width: '100%' }} disabled={isActive} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item label="数据可视化" name="displayData" valuePropName="checked" style={{ marginBottom: 16 }}>
+              <Space>
+                <Switch disabled={isActive} />
+                <Text>显示</Text>
               </Space>
-            </Card>
-
-            {/* 数据集配置 */}
-            <Card className="config-card" title="数据集配置" style={{ marginBottom: 16 }}>
-              <Form.Item
-                label="数据集名称"
-                name="datasetName"
-                rules={[{ required: true, message: '请输入数据集名称' }]}
-              >
-                <Input placeholder="请输入" disabled={isActive} />
-              </Form.Item>
-              <Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 16 }}>
-                格式示例: my_dataset（将存储到~/.cache/huggingface/lerobot/my_dataset/my_dataset_000001）
-              </Paragraph>
-
-              <Form.Item
-                label="任务描述"
-                name="datasetSingleTask"
-                rules={[{ required: true, message: '请输入任务描述' }]}
-              >
-                <Input.TextArea placeholder="请输入任务描述" rows={3} disabled={isActive} />
-              </Form.Item>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="帧率 (FPS)" name="datasetFps" style={{ marginBottom: 8 }}>
-                    <InputNumber min={1} max={120} defaultValue={30} style={{ width: '100%' }} disabled={isActive} />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="采集轮数" name="datasetNumEpisodes" style={{ marginBottom: 8 }}>
-                    <InputNumber min={1} max={100} defaultValue={30} style={{ width: '100%' }} disabled={isActive} />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="每轮录制时长 (秒)" name="datasetEpisodeTimeS" style={{ marginBottom: 8 }}>
-                    <InputNumber min={1} max={300} defaultValue={30} style={{ width: '100%' }} disabled={isActive} />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="重置时长 (秒)" name="datasetResetTimeS" style={{ marginBottom: 8 }}>
-                    <InputNumber min={1} max={300} defaultValue={20} style={{ width: '100%' }} disabled={isActive} />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Form.Item label="数据可视化" name="displayData" valuePropName="checked" style={{ marginBottom: 0 }}>
-                <Space>
-                  <Switch disabled={isActive} />
-                  <Text>显示</Text>
-                </Space>
-              </Form.Item>
-            </Card>
+            </Form.Item>
 
             {/* 操作 */}
-            <Card className="config-card" title="操作" style={{ marginBottom: 16 }}>
-              {renderProgress()}
-              {renderMessagePanel()}
-              {renderControlButtons()}
+            <Card className="config-card" title="操作" style={{ marginBottom: 0 }}>
+              {phase === 'recording' ? (
+                <>
+                  {renderProgress()}
+                  {renderRecordingPanel()}
+                </>
+              ) : (
+                <>
+                  {renderProgress()}
+                  {renderMessagePanel()}
+                  {renderControlButtons()}
+                </>
+              )}
             </Card>
           </Form>
         </Col>

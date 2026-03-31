@@ -26,11 +26,6 @@ const menuItems: MenuItem[] = [
     label: '动作示教',
   },
   {
-    key: '/robot-control?tab=recording',
-    icon: <VideoCameraOutlined />,
-    label: '数据采集（旧版）',
-  },
-  {
     key: '/data-collection',
     icon: <VideoCameraOutlined />,
     label: '数据采集',
