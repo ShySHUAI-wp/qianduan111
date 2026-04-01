@@ -103,13 +103,13 @@ function Teleoperate({ onLog }: TeleoperateProps) {
         return;
       }
 
-      addLog('🚀 准备启动遥操...');
+      addLog('准备启动遥操...');
       setIsRunning(true);
 
       // 如果启用了数据显示，lerobot-teleoperate 会自动处理 Rerun
       if (values.displayData) {
-        addLog('📊 遥操将启用 Rerun 数据记录');
-        addLog('💡 Rerun 可视化将通过 app.rerun.io 连接到本地数据');
+        addLog('遥操将启用 Rerun 数据记录');
+        addLog('Rerun 可视化将通过 app.rerun.io 连接到本地数据');
       }
 
       // 构建请求数据
@@ -175,7 +175,7 @@ function Teleoperate({ onLog }: TeleoperateProps) {
 
           cameraConfig[cameraName] = config;
         });
-        addLog(`📹 使用 ${selectedCameras.length} 个相机: ${JSON.stringify(Object.values(cameraConfig))}`);
+        addLog(`使用 ${selectedCameras.length} 个相机: ${JSON.stringify(Object.values(cameraConfig))}`);
         requestData.cameras = cameraConfig;
       } else {
         requestData.enable_cameras = false;
@@ -194,19 +194,19 @@ function Teleoperate({ onLog }: TeleoperateProps) {
       if (result.code === 0) {
         setCommandId(result.data.commandId);
         message.success('遥操已启动');
-        addLog(`✅ 遥操已启动，命令ID: ${result.data.commandId}`);
+        addLog(`遥操已启动，命令ID: ${result.data.commandId}`);
 
         // 如果启用了数据显示，设置Rerun URL
         if (values.displayData && result.data.rerunUrl) {
           setRerunUrl(result.data.rerunUrl);
-          addLog('📊 Rerun可视化已启动');
+          addLog('Rerun可视化已启动');
         }
       } else {
         throw new Error(result.message || '启动失败');
       }
     } catch (error: any) {
       message.error(`启动失败: ${error.message}`);
-      addLog(`❌ 启动失败: ${error.message}`);
+      addLog(`启动失败: ${error.message}`);
       setIsRunning(false);
     }
   };
@@ -216,7 +216,7 @@ function Teleoperate({ onLog }: TeleoperateProps) {
     if (!commandId) return;
 
     try {
-      addLog('⏸️ 正在停止遥操...');
+      addLog('正在停止遥操...');
 
       const response = await fetch('/api/commands/stop', {
         method: 'POST',
@@ -228,7 +228,7 @@ function Teleoperate({ onLog }: TeleoperateProps) {
 
       if (result.code === 0) {
         message.success('遥操已停止');
-        addLog('⏹️ 遥操已停止');
+        addLog('遥操已停止');
         setIsRunning(false);
         setCommandId(null);
         setRerunUrl(null);
@@ -237,7 +237,7 @@ function Teleoperate({ onLog }: TeleoperateProps) {
       }
     } catch (error: any) {
       message.error(`停止失败: ${error.message}`);
-      addLog(`❌ 停止失败: ${error.message}`);
+      addLog(`停止失败: ${error.message}`);
     }
   };
 
@@ -259,19 +259,19 @@ function Teleoperate({ onLog }: TeleoperateProps) {
   // 机器人端口变化
   const handleRobotPortsChange = (ports: string[]) => {
     setSelectedRobotPorts(ports);
-    addLog(`🔌 已选择机器人端口: ${ports.join(', ')}`);
+    addLog(`已选择机器人端口: ${ports.join(', ')}`);
   };
 
   // 遥操端口变化
   const handleTeleopPortsChange = (ports: string[]) => {
     setSelectedTeleopPorts(ports);
-    addLog(`🔌 已选择遥操端口: ${ports.join(', ')}`);
+    addLog(`已选择遥操端口: ${ports.join(', ')}`);
   };
 
   // 相机变化
   const handleCamerasChange = (cameras: CameraInfo[]) => {
     setSelectedCameras(cameras);
-    addLog(`📹 已选择 ${cameras.length} 个相机`);
+    addLog(`已选择 ${cameras.length} 个相机`);
 
     // 初始化新相机的翻转状态为false
     const newRotations = new Map(cameraRotations);
@@ -287,20 +287,20 @@ function Teleoperate({ onLog }: TeleoperateProps) {
   // 清除机器人端口
   const handleClearRobotPorts = () => {
     setSelectedRobotPorts([]);
-    addLog('🗑️ 已清除机器人端口配置');
+    addLog('已清除机器人端口配置');
   };
 
   // 清除遥操端口
   const handleClearTeleopPorts = () => {
     setSelectedTeleopPorts([]);
-    addLog('🗑️ 已清除遥操端口配置');
+    addLog('已清除遥操端口配置');
   };
 
   // 清除相机
   const handleClearCameras = () => {
     setSelectedCameras([]);
     setCameraRotations(new Map());
-    addLog('🗑️ 已清除相机配置');
+    addLog('已清除相机配置');
   };
 
   // 切换相机翻转状态
@@ -311,7 +311,7 @@ function Teleoperate({ onLog }: TeleoperateProps) {
     setCameraRotations(newRotations);
 
     const rotationStatus = newRotations.get(cameraKey) ? '已启用' : '已禁用';
-    addLog(`🔄 ${camera.name} 翻转功能${rotationStatus}`);
+    addLog(`${camera.name} 翻转功能${rotationStatus}`);
   };
 
   // 渲染相机列表（包含翻转选项）
@@ -579,7 +579,7 @@ function Teleoperate({ onLog }: TeleoperateProps) {
             </Spin>
           </div>
           <div style={{ marginTop: 8, fontSize: '12px', color: '#8c8c8c' }}>
-            💡 提示：Rerun 可视化通过 WebSocket 连接到本地服务 (ws://127.0.0.1:9876)
+            提示：Rerun 可视化通过 WebSocket 连接到本地服务 (ws://127.0.0.1:9876)
           </div>
         </Card>
       )}

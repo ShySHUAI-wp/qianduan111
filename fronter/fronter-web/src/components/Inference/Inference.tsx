@@ -73,7 +73,7 @@ function Inference({ onLog }: InferenceProps) {
         <Button
           type="primary"
           icon={<PlayCircleOutlined />}
-          onClick={() => addLog('🚀 推理任务已提交（等待后端接口返回）')}
+          onClick={() => addLog('推理任务已提交（等待后端接口返回）')}
         >
           开始推理
         </Button>

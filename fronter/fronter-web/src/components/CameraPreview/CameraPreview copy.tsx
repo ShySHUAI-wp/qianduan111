@@ -37,14 +37,14 @@ function CameraPreview({ cameraId, cameraName, visible, onClose, onLog }: Camera
       // 中断当前请求（核心：防止连接残留）
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
-        addLog(`🔌 已中断旧的流请求`);
+        addLog(`已中断旧的流请求`);
       }
       addLog(`发送异步停止请求中`)
       await cameraApi.stopStream(cameraId);
-      addLog(`⏹️ 已停止相机流: ${cameraId}`);
+      addLog(`已停止相机流: ${cameraId}`);
     } catch (error) {
       console.error(`Failed to stop camera stream for ${cameraId}:`, error);
-      addLog(`❌ 停止失败: ${error}`);
+      addLog(`停止失败: ${error}`);
     } finally {
       isStoppingRef.current = false;
       abortControllerRef.current = null;
@@ -55,7 +55,7 @@ function CameraPreview({ cameraId, cameraName, visible, onClose, onLog }: Camera
   const handleClose = async () => {
     console.log('[CameraPreview] handleClose called');
 
-    addLog(`📤 开始关闭预览窗口`);
+    addLog(`开始关闭预览窗口`);
     
     // 核心修改：先同步停止流，再关闭弹窗
     await stopStream();
@@ -94,7 +94,7 @@ function CameraPreview({ cameraId, cameraName, visible, onClose, onLog }: Camera
       setStreamUrl(uniqueStreamUrl); 
       console.log('[CameraPreview] Stream URL:', uniqueStreamUrl);
 
-      addLog(`📹 开始预览相机: ${cameraName} (${cameraId})`);
+      addLog(`开始预览相机: ${cameraName} (${cameraId})`);
       abortControllerRef.current = new AbortController();
     }
   };
@@ -123,14 +123,14 @@ function CameraPreview({ cameraId, cameraName, visible, onClose, onLog }: Camera
   const handleImageLoad = () => {
     setLoading(false);
     setError(null);
-    addLog(`✅ 相机流已连接: ${cameraName}`);
+    addLog(`相机流已连接: ${cameraName}`);
   };
 
   // 图像加载错误
   const handleImageError = () => {
     setLoading(false);
     setError('无法连接到相机流');
-    addLog(`❌ 相机流连接失败: ${cameraName}`);
+    addLog(`相机流连接失败: ${cameraName}`);
     message.error('无法连接到相机流');
   };
 

@@ -301,7 +301,7 @@ function PortFinder({ onPortsChange, onLog, maxSelection, selectionType = 'check
                       onChange: (keys: React.Key[]) => {
                         setSelectedRowKeys(keys);
                         onPortsChange?.(keys as string[]);
-                        if (keys.length) addLog(`✅ 已选择端口: ${keys.join(', ')}`);
+                        if (keys.length) addLog(`已选择端口: ${keys.join(', ')}`);
                       },
                     }}
                   />
@@ -381,9 +381,9 @@ function PortFinder({ onPortsChange, onLog, maxSelection, selectionType = 'check
       onPortsChange?.(newSelectedRowKeys as string[]);
 
       if (newSelectedRowKeys.length > 0) {
-        addLog(`✅ 已选择端口: ${newSelectedRowKeys.join(', ')}`);
+        addLog(`已选择端口: ${newSelectedRowKeys.join(', ')}`);
       } else {
-        addLog(`🔄 已清除端口选择`);
+        addLog(`已清除端口选择`);
       }
     },
     // 当达到最大选择数量时，禁用其他未选中的行
@@ -491,7 +491,7 @@ function PortFinder({ onPortsChange, onLog, maxSelection, selectionType = 'check
         {/* 提示信息 */}
         {ports.length > 0 && (
           <div style={{ color: '#666', fontSize: '13px', marginTop: -8 }}>
-            💡 提示：{selectionType === 'radio' ? '选择' : '勾选'}要使用的端口
+            提示：{selectionType === 'radio' ? '选择' : '勾选'}要使用的端口
             （已选择 {selectedRowKeys.length}
             {maxSelection ? ` / ${maxSelection}` : ''} 个）
           </div>

@@ -77,11 +77,11 @@ function Training({ onLog }: TrainingProps) {
             <Button
               type="primary"
               icon={<PlayCircleOutlined />}
-              onClick={() => addLog('🚀 训练任务已提交（等待后端接口返回）')}
+              onClick={() => addLog('训练任务已提交（等待后端接口返回）')}
             >
               开始训练
             </Button>
-            <Button danger icon={<StopOutlined />} onClick={() => addLog('⏹️ 请求停止训练（等待后端接口返回）')}>
+            <Button danger icon={<StopOutlined />} onClick={() => addLog('请求停止训练（等待后端接口返回）')}>
               停止
             </Button>
           </Space>

@@ -91,13 +91,13 @@ function Calibrate({ onLog }: CalibrateProps) {
   // 端口变化
   const handlePortsChange = (ports: string[]) => {
     setSelectedPorts(ports);
-    addLog(`🔌 已选择端口: ${ports.join(', ')}`);
+    addLog(`已选择端口: ${ports.join(', ')}`);
   };
 
   // 清除端口
   const handleClearPorts = () => {
     setSelectedPorts([]);
-    addLog('🗑️ 已清除端口配置');
+    addLog('已清除端口配置');
   };
 
   // 渲染端口列表
@@ -159,7 +159,7 @@ function Calibrate({ onLog }: CalibrateProps) {
       }
 
       setLoading(true);
-      addLog(`🚀 开始校准流程: ${values.arm_type} - ${values.arm_id}`);
+      addLog(`开始校准流程: ${values.arm_type} - ${values.arm_id}`);
 
       // 构建请求参数
       const requestParams: any = {
@@ -241,12 +241,12 @@ function Calibrate({ onLog }: CalibrateProps) {
 
       const newSessionId = startResult.data.data.session_id;
       setSessionId(newSessionId);
-      addLog(`📝 会话已创建: ${newSessionId}`);
+      addLog(`会话已创建: ${newSessionId}`);
 
       // 使用现有配置
       const useResult = await calibrateApi.useExisting(newSessionId);
       if (useResult.data.code === 0 && useResult.data.data) {
-        addLog(`✅ ${useResult.data.data.message}`);
+        addLog(`${useResult.data.data.message}`);
         message.success('成功应用现有校准配置');
         setStepModalVisible(false);
         setCurrentStep(CalibrationStep.COMPLETED);
@@ -276,8 +276,8 @@ function Calibrate({ onLog }: CalibrateProps) {
 
       const newSessionId = startResult.data.data.session_id;
       setSessionId(newSessionId);
-      addLog(`📝 会话已创建: ${newSessionId}`);
-      addLog(`📡 设备已连接`);
+      addLog(`会话已创建: ${newSessionId}`);
+      addLog(`设备已连接`);
 
       setStepModalVisible(false);
       setCurrentStep(CalibrationStep.SET_MIDDLE);
@@ -302,7 +302,7 @@ function Calibrate({ onLog }: CalibrateProps) {
           请手动将机械臂移动到行程中间位置
         </p>
         <div style={{ marginTop: '16px' }}>
-          <p>📌 操作要求：</p>
+          <p>操作要求：</p>
           <ul style={{ paddingLeft: '20px' }}>
             <li>将所有关节移动到其可活动角度的<strong>中间位置</strong></li>
             <li>确保每个关节都处于中间位置，不要偏向任何一侧</li>
@@ -311,7 +311,7 @@ function Calibrate({ onLog }: CalibrateProps) {
         </div>
         <div style={{ marginTop: '16px', padding: '12px', background: '#fff7e6', borderRadius: '4px' }}>
           <p style={{ margin: 0, color: '#d46b08' }}>
-            ⚠️ 注意：此步骤非常重要，中间位置设置不准确会影响后续校准结果
+            注意：此步骤非常重要，中间位置设置不准确会影响后续校准结果
           </p>
         </div>
         <p style={{ marginTop: '16px' }}>完成后点击"确定"继续</p>
@@ -324,14 +324,14 @@ function Calibrate({ onLog }: CalibrateProps) {
   const handleSetMiddle = async () => {
     try {
       setLoading(true);
-      addLog(`⏳ 正在设置中间位置... (Session: ${sessionId})`);
+      addLog(`正在设置中间位置... (Session: ${sessionId})`);
 
       const result = await calibrateApi.setMiddle(sessionId);
       console.log('[handleSetMiddle] API response:', result.data);
 
       if (result.data.code === 0) {
         const backendStep = (result.data.data as any)?.step || 'middle_set';
-        addLog(`✅ 中间位置已设置 (后端步骤: ${backendStep})`);
+        addLog(`中间位置已设置 (后端步骤: ${backendStep})`);
         console.log(`[handleSetMiddle] Backend step is now: ${backendStep}, sessionId: ${sessionId}`);
 
         setStepModalVisible(false);
@@ -346,7 +346,7 @@ function Calibrate({ onLog }: CalibrateProps) {
       console.error('设置中间位置失败:', error);
       const errorMsg = error.response?.data?.message || '设置中间位置失败';
       message.error(errorMsg);
-      addLog(`❌ 错误: ${errorMsg}`);
+      addLog(`错误: ${errorMsg}`);
       await handleCancelCalibration();
     } finally {
       setLoading(false);
@@ -362,7 +362,7 @@ function Calibrate({ onLog }: CalibrateProps) {
           准备记录关节运动范围
         </p>
         <div style={{ marginTop: '16px' }}>
-          <p>📌 操作要求：</p>
+          <p>操作要求：</p>
           <ul style={{ paddingLeft: '20px' }}>
             <li>
               点击"开始记录"后，依次移动<strong>每个关节</strong>到其物理行程的最大角度
@@ -376,7 +376,7 @@ function Calibrate({ onLog }: CalibrateProps) {
         </div>
         <div style={{ marginTop: '16px', padding: '12px', background: '#fff7e6', borderRadius: '4px' }}>
           <p style={{ margin: 0, color: '#d46b08' }}>
-            ⚠️ 注意：必须移动所有关节到极限位置，否则会报错
+            注意：必须移动所有关节到极限位置，否则会报错
           </p>
         </div>
         <p style={{ marginTop: '16px', color: '#666' }}>
@@ -392,13 +392,13 @@ function Calibrate({ onLog }: CalibrateProps) {
     try {
       setLoading(true);
       console.log(`[handleStartRecording] Called with sessionId: ${sessionId}, currentStep: ${currentStep}`);
-      addLog(`📊 开始记录运动范围... (Session: ${sessionId})`);
+      addLog(`开始记录运动范围... (Session: ${sessionId})`);
 
       const result = await calibrateApi.startRecording(sessionId);
       console.log('[handleStartRecording] API response:', result.data);
 
       if (result.data.code === 0) {
-        addLog(`✅ 正在记录，请移动机械臂...`);
+        addLog(`正在记录，请移动机械臂...`);
 
         // 初始化记录数据为空数组
         setRecordingData([]);
@@ -428,7 +428,7 @@ function Calibrate({ onLog }: CalibrateProps) {
       console.error('Error details:', error.response?.data);
       const errorMsg = error.response?.data?.message || '开始记录失败';
       message.error(errorMsg);
-      addLog(`❌ 错误: ${errorMsg}`);
+      addLog(`错误: ${errorMsg}`);
       await handleCancelCalibration();
     } finally {
       setLoading(false);
@@ -440,7 +440,7 @@ function Calibrate({ onLog }: CalibrateProps) {
     return (
       <div>
         <p style={{ fontSize: '14px', color: '#1890ff', marginBottom: '16px' }}>
-          🔄 正在实时记录各关节位置，请移动机械臂到最大和最小角度
+          正在实时记录各关节位置，请移动机械臂到最大和最小角度
         </p>
 
         {recordingData.length === 0 ? (
@@ -465,7 +465,7 @@ function Calibrate({ onLog }: CalibrateProps) {
 
         <div style={{ padding: '12px', background: '#f0f5ff', borderRadius: '4px' }}>
           <p style={{ margin: 0, fontSize: '12px', color: '#1890ff' }}>
-            💡 提示：确保每个关节的 MIN 和 MAX 值都有明显变化，说明已移动到极限位置
+            提示：确保每个关节的 MIN 和 MAX 值都有明显变化，说明已移动到极限位置
           </p>
         </div>
 
@@ -484,11 +484,11 @@ function Calibrate({ onLog }: CalibrateProps) {
       }
 
       setLoading(true);
-      addLog(`⏸️ 停止记录...`);
+      addLog(`停止记录...`);
 
       const result = await calibrateApi.stopRecording(sessionId);
       if (result.data.code === 0) {
-        addLog(`✅ 记录完成并验证通过`);
+        addLog(`记录完成并验证通过`);
         setStepModalVisible(false);
 
         // 保存校准
@@ -500,7 +500,7 @@ function Calibrate({ onLog }: CalibrateProps) {
       console.error('停止记录失败:', error);
       const errorMsg = error.response?.data?.message || '停止记录失败';
       message.error(errorMsg);
-      addLog(`❌ 错误: ${errorMsg}`);
+      addLog(`错误: ${errorMsg}`);
 
       // 清除轮询
       if (recordingInterval) {
@@ -520,12 +520,12 @@ function Calibrate({ onLog }: CalibrateProps) {
   const handleSaveCalibration = async () => {
     try {
       setLoading(true);
-      addLog(`💾 正在保存校准配置...`);
+      addLog(`正在保存校准配置...`);
 
       const result = await calibrateApi.save(sessionId);
       if (result.data.code === 0 && result.data.data) {
-        addLog(`✅ ${result.data.data.message}`);
-        addLog(`📁 配置文件: ${result.data.data.config_path}`);
+        addLog(`${result.data.data.message}`);
+        addLog(`配置文件: ${result.data.data.config_path}`);
         setCurrentStep(CalibrationStep.COMPLETED);
         showCompletedModal();
       } else {
@@ -535,7 +535,7 @@ function Calibrate({ onLog }: CalibrateProps) {
       console.error('保存校准失败:', error);
       const errorMsg = error.response?.data?.message || '保存校准失败';
       message.error(errorMsg);
-      addLog(`❌ 错误: ${errorMsg}`);
+      addLog(`错误: ${errorMsg}`);
       setCurrentStep(CalibrationStep.IDLE);
       setSessionId('');
     } finally {
@@ -549,7 +549,7 @@ function Calibrate({ onLog }: CalibrateProps) {
       title: '校准完成',
       content: (
         <div>
-          <p style={{ fontSize: '16px', color: '#52c41a' }}>✅ 机械臂校准已成功完成！</p>
+          <p style={{ fontSize: '16px', color: '#52c41a' }}>机械臂校准已成功完成！</p>
           <p>校准配置已保存，您现在可以使用此机械臂进行遥操或数据采集。</p>
         </div>
       ),
@@ -572,7 +572,7 @@ function Calibrate({ onLog }: CalibrateProps) {
     if (sessionId) {
       try {
         await calibrateApi.cancel(sessionId);
-        addLog(`🛑 校准已安全取消`);
+        addLog(`校准已安全取消`);
         message.info('校准已安全取消');
       } catch (error) {
         console.error('取消校准失败:', error);

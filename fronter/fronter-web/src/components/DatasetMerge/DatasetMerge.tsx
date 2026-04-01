@@ -42,7 +42,7 @@ function DatasetMerge({ onLog }: DatasetMergeProps) {
               { key: '1', name: 'my_dataset_000001', structure: 'lerobot', episodes: 30 },
               { key: '2', name: 'my_dataset_000002', structure: 'lerobot', episodes: 30 },
             ]);
-            addLog('🔄 已刷新数据集列表（示例数据）');
+            addLog('已刷新数据集列表（示例数据）');
           }}
         >
           刷新
@@ -65,7 +65,7 @@ function DatasetMerge({ onLog }: DatasetMergeProps) {
           <Button
             type="primary"
             icon={<PlayCircleOutlined />}
-            onClick={() => addLog(`🚀 开始合并：输出数据集 = ${mergedName}（等待后端接口返回）`)}
+            onClick={() => addLog(`开始合并：输出数据集 = ${mergedName}（等待后端接口返回）`)}
           >
             开始合并
           </Button>

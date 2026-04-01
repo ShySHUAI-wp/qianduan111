@@ -3,6 +3,7 @@ import { Typography, Card, Form, Select, Input, Button, Space, Tag, Affix, Row, 
 import { UsbOutlined, VideoCameraOutlined, PlayCircleOutlined, StopOutlined, CopyOutlined, ClearOutlined } from '@ant-design/icons';
 import PortFinder from '@/components/PortFinder';
 import CameraFinder from '@/components/CameraFinder';
+import CameraPreview from '@/components/CameraPreview';
 import LogViewer from '@/components/LogViewer';
 import { wsService } from '@/services/socket';
 import ReactECharts from 'echarts-for-react';
@@ -65,6 +66,11 @@ function MotionTeachingPage() {
   const [cameraModalVisible, setCameraModalVisible] = useState(false);
   const [selectedCameras, setSelectedCameras] = useState<CameraInfo[]>([]);
   const [cameraRotations, setCameraRotations] = useState<Map<string, boolean>>(new Map());
+
+  // 相机预览状态
+  const [previewCamera, setPreviewCamera] = useState<CameraInfo | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [localCameraStream, setLocalCameraStream] = useState<MediaStream | null>(null);
 
   // 日志
   const [logs, setLogs] = useState<string[]>([]);
@@ -229,6 +235,22 @@ function MotionTeachingPage() {
     setSelectedCameras([]);
     setCameraRotations(new Map());
     addLog('已清除相机配置');
+  };
+
+  // 相机预览回调
+  const handlePreviewCamera = (camera: CameraInfo, localStream: MediaStream | null) => {
+    setPreviewCamera(camera);
+    setPreviewVisible(true);
+    if (camera.type === 'LocalCamera') {
+      setLocalCameraStream(localStream);
+    }
+  };
+
+  // 关闭预览回调
+  const handleClosePreview = () => {
+    setPreviewVisible(false);
+    setPreviewCamera(null);
+    setLocalCameraStream(null);
   };
 
   // 渲染设备列表
@@ -869,10 +891,28 @@ function MotionTeachingPage() {
               title="配置相机"
               extra={<Button onClick={() => setCameraModalVisible(false)}>关闭</Button>}
             >
-              <CameraFinder onCamerasChange={handleCamerasChange} onLog={addLog} />
+              <CameraFinder
+                onCamerasChange={handleCamerasChange}
+                onLog={addLog}
+                onPreviewCamera={handlePreviewCamera}
+                localCameraStream={localCameraStream}
+              />
             </Card>
           </div>
         </div>
+      )}
+
+      {/* 相机预览弹窗（放在相机配置弹窗外侧，不会被遮挡） */}
+      {previewCamera && (
+        <CameraPreview
+          cameraId={String(previewCamera.id)}
+          cameraName={previewCamera.name}
+          cameraType={previewCamera.type}
+          visible={previewVisible}
+          onClose={handleClosePreview}
+          onLog={addLog}
+          localStream={previewCamera.type === 'LocalCamera' ? localCameraStream : null}
+        />
       )}
     </div>
   );
