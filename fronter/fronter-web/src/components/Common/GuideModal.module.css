@@ -1,0 +1,160 @@
+/* ============================================================
+   GuideModal 样式文件
+   项目主题色: #1890ff (Ant Design 蓝)
+   ============================================================ */
+
+/* 弹窗容器 */
+.guideModal :global(.ant-modal-content) {
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* 整体容器 */
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─────────────────────────────────────────────
+   顶部插画区域
+   ───────────────────────────────────────────── */
+.illustrationArea {
+  width: 100%;
+  height: 220px;
+  background: linear-gradient(135deg, #E6F7FF 0%, #F0F5FF 50%, #F9F0FF 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.iconWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 占位图标样式 */
+.iconWrapper svg {
+  display: block;
+}
+
+/* TODO: 替换插画图片样式 - 取消下面注释并删除占位图标
+.illustration {
+  width: 200px;
+  height: 180px;
+  object-fit: contain;
+}
+*/
+
+/* AI 标识 */
+.aiLabel {
+  position: absolute;
+  top: -8px;
+  right: -20px;
+  background: #FF7A45;
+  color: #FFF;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(255, 122, 69, 0.4);
+}
+
+/* ─────────────────────────────────────────────
+   中间文字区域
+   ───────────────────────────────────────────── */
+.textArea {
+  padding: 24px 32px;
+  text-align: left;
+}
+
+.stepTitle {
+  font-size: 18px;
+  font-weight: bold;
+  color: #000;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.stepDescription {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ─────────────────────────────────────────────
+   底部操作区域
+   ───────────────────────────────────────────── */
+.actionArea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* 步骤指示器 */
+.stepIndicators {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #D9D9D9;
+  transition: all 0.3s ease;
+}
+
+.dotActive {
+  width: 24px;
+  border-radius: 4px;
+  background: #1890FF;
+}
+
+/* 按钮样式 */
+.btnPrimary {
+  background: #1890FF !important;
+  border-color: #1890FF !important;
+  color: #FFF !important;
+  font-weight: 500;
+  height: 36px;
+  padding: 0 24px;
+  border-radius: 6px;
+}
+
+.btnPrimary:hover {
+  background: #40A9FF !important;
+  border-color: #40A9FF !important;
+}
+
+.btnPrimary:active {
+  background: #096DD9 !important;
+  border-color: #096DD9 !important;
+}
+
+.btnSecondary {
+  background: #FFF !important;
+  border: 1px solid #D9D9D9 !important;
+  color: #666 !important;
+  font-weight: 500;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 6px;
+}
+
+.btnSecondary:hover {
+  border-color: #1890FF !important;
+  color: #1890FF !important;
+}
+
+.btnSecondary:active {
+  border-color: #096DD9 !important;
+  color: #096DD9 !important;
+}

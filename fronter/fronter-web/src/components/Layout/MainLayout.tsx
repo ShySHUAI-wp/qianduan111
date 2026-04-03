@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu } from 'antd';
-import { HomeOutlined, ToolOutlined, PlayCircleOutlined, VideoCameraOutlined, RobotOutlined } from '@ant-design/icons';
+import { HomeOutlined, ToolOutlined, PlayCircleOutlined, VideoCameraOutlined, RobotOutlined, ExperimentOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import styles from './MainLayout.module.css';
 
@@ -31,9 +31,9 @@ const menuItems: MenuItem[] = [
     label: '数据采集',
   },
   {
-    key: '/robot-control?tab=training',
-    icon: <RobotOutlined />,
-    label: '模型训练',
+    key: '/model-training',
+    icon: <ExperimentOutlined />,
+    label: '模型服务 - 模型训练',
   },
   {
     key: '/robot-control?tab=inference',
@@ -58,6 +58,7 @@ function MainLayout() {
     if (path.startsWith('/calibration')) return '/calibration';
     if (path.startsWith('/motion-teaching')) return '/motion-teaching';
     if (path.startsWith('/data-collection')) return '/data-collection';
+    if (path.startsWith('/model-training')) return '/model-training';
     if (path.startsWith('/robot-control')) {
       const p = new URLSearchParams(location.search);
       const tab = p.get('tab') || 'teleoperation';
