@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import PortFinder from '@/components/PortFinder';
 import CameraFinder from '@/components/CameraFinder';
+import CameraPreview from '@/components/CameraPreview';
 import { wsService } from '@/services/socket';
 import type { CameraInfo } from '@/types';
 import './DataCollectionPage.css';
@@ -156,6 +157,10 @@ function DataCollectionPage() {
   const [cameraModalVisible, setCameraModalVisible] = useState(false);
   const [selectedCameras, setSelectedCameras] = useState<CameraInfo[]>([]);
   const [cameraRotations, setCameraRotations] = useState<Map<string, boolean>>(new Map());
+
+  // 相机预览状态
+  const [previewCamera, setPreviewCamera] = useState<CameraInfo | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
 
   // 日志
   const [logs, setLogs] = useState<string[]>([]);
@@ -720,6 +725,18 @@ function DataCollectionPage() {
     setSelectedCameras([]);
     setCameraRotations(new Map());
     addLog('已清除相机配置');
+  };
+
+  // 相机预览回调
+  const handlePreviewCamera = (camera: CameraInfo) => {
+    setPreviewCamera(camera);
+    setPreviewVisible(true);
+  };
+
+  // 关闭预览回调
+  const handleClosePreview = () => {
+    setPreviewVisible(false);
+    setPreviewCamera(null);
   };
 
   // ===================== 渲染：设备列表 =====================
@@ -1408,10 +1425,23 @@ function DataCollectionPage() {
               title="配置相机"
               extra={<Button onClick={() => setCameraModalVisible(false)}>关闭</Button>}
             >
-              <CameraFinder onCamerasChange={handleCamerasChange} onLog={addLog} />
+              <CameraFinder onCamerasChange={handleCamerasChange} onLog={addLog} onPreviewCamera={handlePreviewCamera} />
             </Card>
           </div>
         </div>
+      )}
+
+      {/* 相机预览弹窗 */}
+      {previewCamera && (
+        <CameraPreview
+          cameraId={String(previewCamera.id)}
+          cameraName={previewCamera.name}
+          cameraType={previewCamera.type}
+          visible={previewVisible}
+          onClose={handleClosePreview}
+          onLog={addLog}
+          localStream={null}
+        />
       )}
 
       {/* 固定悬浮安全操作面板 */}

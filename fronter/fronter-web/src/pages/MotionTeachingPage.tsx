@@ -70,7 +70,6 @@ function MotionTeachingPage() {
   // 相机预览状态
   const [previewCamera, setPreviewCamera] = useState<CameraInfo | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
-  const [localCameraStream, setLocalCameraStream] = useState<MediaStream | null>(null);
 
   // 日志
   const [logs, setLogs] = useState<string[]>([]);
@@ -238,19 +237,15 @@ function MotionTeachingPage() {
   };
 
   // 相机预览回调
-  const handlePreviewCamera = (camera: CameraInfo, localStream: MediaStream | null) => {
+  const handlePreviewCamera = (camera: CameraInfo) => {
     setPreviewCamera(camera);
     setPreviewVisible(true);
-    if (camera.type === 'LocalCamera') {
-      setLocalCameraStream(localStream);
-    }
   };
 
   // 关闭预览回调
   const handleClosePreview = () => {
     setPreviewVisible(false);
     setPreviewCamera(null);
-    setLocalCameraStream(null);
   };
 
   // 渲染设备列表
@@ -895,7 +890,6 @@ function MotionTeachingPage() {
                 onCamerasChange={handleCamerasChange}
                 onLog={addLog}
                 onPreviewCamera={handlePreviewCamera}
-                localCameraStream={localCameraStream}
               />
             </Card>
           </div>
@@ -911,7 +905,7 @@ function MotionTeachingPage() {
           visible={previewVisible}
           onClose={handleClosePreview}
           onLog={addLog}
-          localStream={previewCamera.type === 'LocalCamera' ? localCameraStream : null}
+          localStream={null}
         />
       )}
     </div>

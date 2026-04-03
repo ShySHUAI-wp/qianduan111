@@ -90,7 +90,7 @@ function CameraPreview({
     setError(null);
   };
 
-  // 初始化流
+  // 初始化流 - 负责初始化流并设置 srcObject
   useEffect(() => {
     const initStream = async () => {
       // 防止重复初始化
@@ -107,18 +107,25 @@ function CameraPreview({
         setError(null);
         isStoppingRef.current = false;
 
-        // 如果是本地摄像头且传入了本地流
-        if (isLocalCamera && localStream) {
-          // 直接使用传入的本地流进行预览
-          localStreamRef.current = localStream;
-          addLog(`开始预览本地摄像头: ${cameraName}`);
-          // 使用setTimeout确保video元素已渲染
-          setTimeout(() => {
-            if (videoRef.current && localStream) {
-              videoRef.current.srcObject = localStream;
+        // 如果是本地摄像头，在组件内部调用 getUserMedia
+        if (isLocalCamera) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+            });
+            localStreamRef.current = stream;
+            addLog(`已获取本地摄像头`);
+
+            // 设置 video srcObject
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
             }
-          }, 0);
-          setLoading(false);
+            setLoading(false);
+          } catch (error) {
+            console.error('[CameraPreview] Failed to getUserMedia:', error);
+            setError('无法访问摄像头');
+            addLog(`无法访问摄像头: ${error}`);
+          }
           return;
         }
 
@@ -147,13 +154,12 @@ function CameraPreview({
     return () => {
       if (!visible && !isStoppingRef.current) {
         console.log('[CameraPreview] Cleanup: stopping stream');
-        if (isLocalCamera) {
-          // 本地摄像头不需要调用后端API停止
-          if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
-            localStreamRef.current = null;
-          }
-        } else {
+        if (isLocalCamera && localStreamRef.current) {
+          // 停止本地摄像头流
+          localStreamRef.current.getTracks().forEach(track => track.stop());
+          localStreamRef.current = null;
+          addLog('已停止本地摄像头流');
+        } else if (!isLocalCamera) {
           cameraApi.stopStream(cameraId).catch((err) => {
             console.error('[CameraPreview] Cleanup stopStream failed:', err);
           });
@@ -163,10 +169,6 @@ function CameraPreview({
       // 清空img
       if (imgRef.current) {
         imgRef.current.src = '';
-      }
-      // 清空video的srcObject
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
       }
     };
   }, [visible, cameraId, cameraName, isLocalCamera, localStream]);
@@ -231,7 +233,7 @@ function CameraPreview({
         )}
 
         {/* 本地摄像头使用video标签直接播放 */}
-        {visible && isLocalCamera && localStream && (
+        {isLocalCamera && (
           <video
             ref={videoRef as React.RefObject<HTMLVideoElement>}
             className="camera-preview-image"

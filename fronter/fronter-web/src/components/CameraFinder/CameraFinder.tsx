@@ -8,21 +8,18 @@ import './CameraFinder.css';
 interface CameraFinderProps {
   onCamerasChange?: (cameras: CameraInfo[]) => void;
   onLog?: (message: string) => void;
-  onPreviewCamera?: (camera: CameraInfo, localStream: MediaStream | null) => void;  // 新增：预览回调
-  localCameraStream?: MediaStream | null;  // 新增：本地摄像头流（从父组件传入）
+  onPreviewCamera?: (camera: CameraInfo) => void;  // 预览回调，不再传递 stream
 }
 
-function CameraFinder({ onCamerasChange, onLog, onPreviewCamera, localCameraStream }: CameraFinderProps) {
+function CameraFinder({ onCamerasChange, onLog, onPreviewCamera }: CameraFinderProps) {
   const [loading, setLoading] = useState(false);
   const [cameras, setCameras] = useState<CameraInfo[]>([]);
-  const [localCameraError, setLocalCameraError] = useState<string | null>(null);
-  const [internalLocalStream, setInternalLocalStream] = useState<MediaStream | null>(null);
 
   // 选中的相机列表
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
-  // 追踪是否已初始化本地摄像头
-  const localCameraInitializedRef = useRef(false);
+  // 追踪是否已添加本地摄像头
+  const localCameraAddedRef = useRef(false);
 
   // 添加日志
   const addLog = (msg: string) => {
@@ -30,101 +27,37 @@ function CameraFinder({ onCamerasChange, onLog, onPreviewCamera, localCameraStre
     onLog?.(msg);
   };
 
-  // 自动获取本地前置摄像头
+  // 初始化本地摄像头信息（不调用 getUserMedia）
   useEffect(() => {
-    const initLocalCamera = async () => {
-      // 防止重复初始化
-      if (localCameraInitializedRef.current) {
-        return;
-      }
-      localCameraInitializedRef.current = true;
+    // 防止重复添加
+    if (localCameraAddedRef.current) {
+      return;
+    }
+    localCameraAddedRef.current = true;
 
-      try {
-        addLog('正在检测本地摄像头...');
-
-        // 检查浏览器是否支持 getUserMedia
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('您的浏览器不支持摄像头访问');
-        }
-
-        // 请求用户前置摄像头
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'user', // 前置摄像头
-            width: { ideal: 640 },
-            height: { ideal: 480 }
-          }
-        });
-
-        // 获取设备信息
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(d => d.kind === 'videoinput');
-        const frontCamera = videoDevices.find(d =>
-          d.label.toLowerCase().includes('front') ||
-          d.label.toLowerCase().includes('前置') ||
-          d.label.toLowerCase().includes('camera')
-        );
-
-        // 保存本地流供预览使用
-        setInternalLocalStream(stream);
-
-        // 创建本地摄像头信息对象
-        const localCamera: CameraInfo = {
-          name: '本地摄像头 (前置)',
-          type: 'LocalCamera',
-          id: `local-${frontCamera?.deviceId || 'default'}`,
-          backend_api: 'getUserMedia',
-          default_stream_profile: {
-            format: 0,
-            fourcc: 'MJPG',
-            width: 640,
-            height: 480,
-            fps: 30
-          }
-        };
-
-        // 添加到相机列表（放在最前面）
-        setCameras(prev => {
-          // 避免重复添加
-          if (prev.some(cam => cam.type === 'LocalCamera')) {
-            return prev;
-          }
-          return [localCamera, ...prev];
-        });
-
-        // 默认选中本地摄像头
-        setSelectedRowKeys([`LocalCamera-${localCamera.id}`]);
-        onCamerasChange?.([localCamera]);
-
-        addLog('已自动加载本地前置摄像头');
-        message.success('已自动加载本地前置摄像头');
-
-      } catch (error: any) {
-        console.error('[CameraFinder] 初始化本地摄像头失败:', error);
-        setLocalCameraError(error.message);
-
-        // 根据错误类型给出友好提示
-        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          addLog('用户拒绝了摄像头权限，可手动查找USB相机');
-        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-          addLog('未找到本地摄像头，可手动查找USB相机');
-        } else {
-          addLog(`摄像头初始化失败: ${error.message}`);
-        }
-        // 不影响原有功能，用户仍可使用USB相机查找
+    // 创建本地摄像头信息对象（静态添加，不获取流）
+    const localCamera: CameraInfo = {
+      name: '本地摄像头 (前置)',
+      type: 'LocalCamera',
+      id: 'local-default',
+      backend_api: 'getUserMedia',
+      default_stream_profile: {
+        format: 0,
+        fourcc: 'MJPG',
+        width: 640,
+        height: 480,
+        fps: 30
       }
     };
 
-    // 页面加载后自动初始化本地摄像头
-    initLocalCamera();
+    // 添加到相机列表
+    setCameras([localCamera]);
+    // 默认选中本地摄像头
+    setSelectedRowKeys([`LocalCamera-${localCamera.id}`]);
+    onCamerasChange?.([localCamera]);
 
-    // 组件卸载时清理
-    return () => {
-      if (internalLocalStream) {
-        internalLocalStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [onCamerasChange, addLog, onPreviewCamera]);
+    addLog('已添加本地摄像头选项');
+  }, []);
 
   // 开始查找相机（显示确认对话框）
   const handleFindCamera = () => {
@@ -222,9 +155,8 @@ function CameraFinder({ onCamerasChange, onLog, onPreviewCamera, localCameraStre
     isOpeningPreviewRef.current = true;
     addLog(`打开相机预览: ${camera.name}`);
 
-    // 调用父组件的预览回调，传入本地流（如果是本地摄像头）
-    const stream = camera.type === 'LocalCamera' ? internalLocalStream : null;
-    onPreviewCamera?.(camera, stream);
+    // 调用父组件的预览回调，不传递 stream（由 CameraPreview 自己获取）
+    onPreviewCamera?.(camera);
 
     // 延迟重置标志，防止快速重复点击
     setTimeout(() => {
