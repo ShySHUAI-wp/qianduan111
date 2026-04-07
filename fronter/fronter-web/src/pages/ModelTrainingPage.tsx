@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Tabs, Button, Card, Typography } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import Training from '@/components/Training';
@@ -6,6 +6,7 @@ import DatasetMerge from '@/components/DatasetMerge';
 import ModelDeploy from '@/components/ModelDeploy';
 import LogViewer from '@/components/Common/LogViewer';
 import GuideModal from '@/components/Common/GuideModal';
+import LossChart from '@/components/Training/LossChart';
 
 function ModelTrainingPage() {
   const [activeTab, setActiveTab] = useState('training');
@@ -13,6 +14,43 @@ function ModelTrainingPage() {
   const [mergeLogs, setMergeLogs] = useState<string[]>([]);
   const [deployLogs, setDeployLogs] = useState<string[]>([]);
   const [guideVisible, setGuideVisible] = useState(false);
+
+  // 训练图表数据
+  const [lossData, setLossData] = useState<number[]>([]);
+  const [stepData, setStepData] = useState<number[]>([]);
+  const [isTraining, setIsTraining] = useState(false);
+  const lossDataRef = useRef<number[]>([]);
+  const stepDataRef = useRef<number[]>([]);
+
+  // 添加loss数据点
+  const addLossPoint = useCallback((step: number, loss: number) => {
+    const newLossData = [...lossDataRef.current, loss].slice(-500);
+    const newStepData = [...stepDataRef.current, step].slice(-500);
+    lossDataRef.current = newLossData;
+    stepDataRef.current = newStepData;
+    setLossData([...newLossData]);
+    setStepData([...newStepData]);
+  }, []);
+
+  // 清空图表数据
+  const clearChartData = useCallback(() => {
+    lossDataRef.current = [];
+    stepDataRef.current = [];
+    setLossData([]);
+    setStepData([]);
+    setIsTraining(false);
+  }, []);
+
+  // 开始训练
+  const handleStartTraining = useCallback(() => {
+    clearChartData();
+    setIsTraining(true);
+  }, [clearChartData]);
+
+  // 停止训练
+  const handleStopTraining = useCallback(() => {
+    setIsTraining(false);
+  }, []);
 
   const addLog = (msg: string) => {
     setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -45,14 +83,18 @@ function ModelTrainingPage() {
       children: (
         <div style={{ display: 'flex', gap: 16 }}>
           <div style={{ flex: 1 }}>
-            <Training onLog={addLog} />
+            <Training
+              onLog={addLog}
+              onStartTraining={handleStartTraining}
+              onStopTraining={handleStopTraining}
+            />
           </div>
           <div style={{ width: 400 }}>
-            <Card title="训练图表" style={{ marginBottom: 16 }}>
-              <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
-                这是一个图表，用于实时展示 loss 曲线的变化情况
-              </div>
-            </Card>
+            <LossChart
+              lossData={lossData}
+              stepData={stepData}
+              isTraining={isTraining}
+            />
             <LogViewer
               logs={logs}
               title="日志输出"

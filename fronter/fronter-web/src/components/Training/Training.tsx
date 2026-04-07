@@ -3,9 +3,11 @@ import { PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
 
 interface TrainingProps {
   onLog?: (message: string) => void;
+  onStartTraining?: () => void;
+  onStopTraining?: () => void;
 }
 
-function Training({ onLog }: TrainingProps) {
+function Training({ onLog, onStartTraining, onStopTraining }: TrainingProps) {
   const [form] = Form.useForm();
 
   const addLog = (msg: string) => onLog?.(msg);
@@ -77,11 +79,21 @@ function Training({ onLog }: TrainingProps) {
             <Button
               type="primary"
               icon={<PlayCircleOutlined />}
-              onClick={() => addLog('训练任务已提交（等待后端接口返回）')}
+              onClick={() => {
+                addLog('训练任务已提交（等待后端接口返回）');
+                onStartTraining?.();
+              }}
             >
               开始训练
             </Button>
-            <Button danger icon={<StopOutlined />} onClick={() => addLog('请求停止训练（等待后端接口返回）')}>
+            <Button
+              danger
+              icon={<StopOutlined />}
+              onClick={() => {
+                addLog('请求停止训练（等待后端接口返回）');
+                onStopTraining?.();
+              }}
+            >
               停止
             </Button>
           </Space>
