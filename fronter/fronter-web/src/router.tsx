@@ -8,6 +8,7 @@ import CalibrationPage from './pages/CalibrationPage';
 import MotionTeachingPage from './pages/MotionTeachingPage';
 import DataCollectionPage from './pages/DataCollectionPage';
 import ModelTrainingPage from './pages/ModelTrainingPage';
+import InferencePage from './pages/InferencePage';
 
 function AppRouter() {
   return (
@@ -19,6 +20,7 @@ function AppRouter() {
         <Route path="motion-teaching" element={<MotionTeachingPage />} />
         <Route path="data-collection" element={<DataCollectionPage />} />
         <Route path="model-training" element={<ModelTrainingPage />} />
+        <Route path="inference" element={<InferencePage />} />
         <Route path="tutorial/*" element={<Tutorial />} />
         <Route path="chassis-control" element={<ChassisControl />} />
         <Route path="robot-control/*" element={<RobotControl />} />

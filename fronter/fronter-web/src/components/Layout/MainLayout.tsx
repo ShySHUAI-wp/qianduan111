@@ -36,9 +36,14 @@ const menuItems: MenuItem[] = [
     label: '模型服务 - 模型训练',
   },
   {
-    key: '/robot-control?tab=inference',
+    key: '/inference',
     icon: <RobotOutlined />,
-    label: '实机部署',
+    label: '模型推理',
+  },
+  {
+    key: '/robot-control',
+    icon: <RobotOutlined />,
+    label: '实机部署（2）',
   },
 ];
 
@@ -59,11 +64,8 @@ function MainLayout() {
     if (path.startsWith('/motion-teaching')) return '/motion-teaching';
     if (path.startsWith('/data-collection')) return '/data-collection';
     if (path.startsWith('/model-training')) return '/model-training';
-    if (path.startsWith('/robot-control')) {
-      const p = new URLSearchParams(location.search);
-      const tab = p.get('tab') || 'teleoperation';
-      return `/robot-control?tab=${tab}`;
-    }
+    if (path.startsWith('/inference')) return '/inference';
+    if (path.startsWith('/robot-control')) return '/robot-control';
     return '/home';
   };
 
