@@ -149,7 +149,7 @@ function ModelTrainingPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Typography.Title level={2} style={{ margin: 0, fontSize: 20 }}>
-          模型服务 - 模型训练
+          模型训练
         </Typography.Title>
         <Button
           type="primary"

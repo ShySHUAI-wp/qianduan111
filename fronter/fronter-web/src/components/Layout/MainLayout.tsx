@@ -33,17 +33,17 @@ const menuItems: MenuItem[] = [
   {
     key: '/model-training',
     icon: <ExperimentOutlined />,
-    label: '模型服务 - 模型训练',
+    label: '模型训练',
   },
   {
     key: '/inference',
     icon: <RobotOutlined />,
-    label: '模型推理',
+    label: '实机部署',
   },
   {
     key: '/robot-control',
     icon: <RobotOutlined />,
-    label: '实机部署（2）',
+    label: '多余页面',
   },
 ];
 
